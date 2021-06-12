@@ -32,57 +32,57 @@ should turn into:
 
 ```
 {
-          results: [
-            { found: false, source: "bgp", result: null },
-            { found: false, source: "rir_alloc", result: null }
-          ],
-          relations: [
-            {
-              type: "less-specific",
-              source: "rir_alloc",
-              prefix: "193.0.0.0/20",
-              origin_asn: null,
-              lmp: false,
-              rir: "ripe"
-            },
-            {
-              type: "less-specific",
-              source: "bgp",
-              prefix: "193.0.10.0/23",
-              origin_asn: "AS3333",
-              lmp: true,
-              rir: "ripe"
-            },
-            {
-              type: "same_org",
-              source: "rir_alloc",
-              prefix: "193.0.16.0/21",
-              origin_asn: null,
-              rir: "ripe"
-            },
-            {
-              type: "same_org",
-              source: "rir_alloc",
-              prefix: "84.205.64.0/19",
-              origin_asn: null,
-              rir: "ripe"
-            },
-            {
-              type: "same_org",
-              source: "rir_alloc",
-              prefix: "93.175.144.0/21",
-              origin_asn: null,
-              rir: "ripe"
-            },
-            {
-              type: "same_org",
-              source: "rir_alloc",
-              prefix: "93.175.159.0/24",
-              origin_asn: "12859",
-              rir: "ripe"
-            }
-          ]
-        }
+  results: [
+    { found: false, source: "bgp", result: null },
+    { found: false, source: "rir_alloc", result: null }
+  ],
+  relations: [
+    {
+      type: "less-specific",
+      source: "rir_alloc",
+      prefix: "193.0.0.0/20",
+      origin_asn: null,
+      lmp: false,
+      rir: "ripe"
+    },
+    {
+      type: "less-specific",
+      source: "bgp",
+      prefix: "193.0.10.0/23",
+      origin_asn: "AS3333",
+      lmp: true,
+      rir: "ripe"
+    },
+    {
+      type: "same_org",
+      source: "rir_alloc",
+      prefix: "193.0.16.0/21",
+      origin_asn: null,
+      rir: "ripe"
+    },
+    {
+      type: "same_org",
+      source: "rir_alloc",
+      prefix: "84.205.64.0/19",
+      origin_asn: null,
+      rir: "ripe"
+    },
+    {
+      type: "same_org",
+      source: "rir_alloc",
+      prefix: "93.175.144.0/21",
+      origin_asn: null,
+      rir: "ripe"
+    },
+    {
+      type: "same_org",
+      source: "rir_alloc",
+      prefix: "93.175.159.0/24",
+      origin_asn: "12859",
+      rir: "ripe"
+    }
+  ]
+}
 ```
 
 (yes, sorry, this is actual JS, should be JSON, but you get the gist)
