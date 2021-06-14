@@ -32,54 +32,51 @@ should turn into:
 
 ```
 {
-  results: [
-    { source: "bgp", result: null },
-    { source: "rir_alloc", result: null }
+  prefix: "193.0.10.0/24",
+  sources: [
+    { type: "exact-match", source: "bgp", origin_asn: null },
+    { type: "exact-match", source: "rir_alloc", rir: null }
   ],
   relations: [
     {
       type: "less-specific",
-      source: "rir_alloc",
-      prefix: "193.0.0.0/20",
-      origin_asn: null,
-      lmp: false,
-      rir: "ripe"
+      sources: [{ type: "rir_alloc", rir: "ripe" }],
+      prefix: "193.0.0.0/20"
     },
     {
       type: "less-specific",
-      source: "bgp",
-      prefix: "193.0.10.0/23",
-      origin_asn: "AS3333",
-      lmp: true,
-      rir: "ripe"
+      sources: [
+        { type: "bgp", rir: "ripe", origin_asn: "AS3333" },
+        { type: "rir_alloc", rir: "ripe" }
+      ],
+      prefix: "193.0.10.0/23"
     },
     {
       type: "same_org",
-      source: "rir_alloc",
-      prefix: "193.0.16.0/21",
-      origin_asn: null,
-      rir: "ripe"
+      sources: [{ type: "rir_alloc", rir: "ripe" }],
+      prefix: "193.0.16.0/21"
     },
     {
       type: "same_org",
-      source: "rir_alloc",
+      sources: [{ type: "rir_alloc", rir: "ripe" }],
       prefix: "84.205.64.0/19",
       origin_asn: null,
       rir: "ripe"
     },
     {
       type: "same_org",
-      source: "rir_alloc",
+      sources: [{ type: "rir_alloc", rir: "ripe" }],
       prefix: "93.175.144.0/21",
       origin_asn: null,
       rir: "ripe"
     },
     {
       type: "same_org",
-      source: "rir_alloc",
-      prefix: "93.175.159.0/24",
-      origin_asn: "12859",
-      rir: "ripe"
+      sources: [
+        { type: "rir_alloc", rir: "ripe" },
+        { type: "bgp", origin_asn: "12859" }
+      ],
+      prefix: "93.175.159.0/24"
     }
   ]
 }
