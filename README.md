@@ -33,7 +33,7 @@ should turn into:
 ```
 {
   prefix: "193.0.10.0/24",
-  type: "exact-match",
+  type: "exact_match",
   // There no exact matches in this example.
   // An example that would have exact matches
   // would have the same result types as the
@@ -45,12 +45,12 @@ should turn into:
   results: [],
   relations: [
     {
-      type: "less-specific",
+      type: "less_specific",
       results: [{ source: "rir_alloc", rir: "ripe" }],
       prefix: "193.0.0.0/20"
     },
     {
-      type: "less-specific",
+      type: "less_specific",
       results: [
         { source: "bgp", origin_asn: "AS3333" },
         { source: "rir_alloc", rir: "ripe" }
