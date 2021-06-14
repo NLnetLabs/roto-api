@@ -78,7 +78,7 @@ should turn into:
       type: "same_org",
       results: [
         { source: "rir_alloc", rir: "ripe" },
-        { source: "bgp", origin_asn: "12859" }
+        { source: "bgp", origin_asn: "AS12859" }
       ],
       prefix: "93.175.159.0/24"
     }
