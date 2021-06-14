@@ -52,7 +52,7 @@ should turn into:
     {
       type: "less-specific",
       results: [
-        { source: "bgp", rir: "ripe", origin_asn: "AS3333" },
+        { source: "bgp", origin_asn: "AS3333" },
         { source: "rir_alloc", rir: "ripe" }
       ],
       prefix: "193.0.10.0/23"
