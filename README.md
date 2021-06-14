@@ -34,10 +34,15 @@ should turn into:
 {
   prefix: "193.0.10.0/24",
   type: "exact-match",
-  results: [
-    { source: "bgp", origin_asn: null },
-    { source: "rir_alloc", rir: null }
-  ],
+  // There no exact matches in this example.
+  // An example that would have exact matches
+  // would have the same result types as the
+  // `relations` structure:
+  // [
+  //   { source: "bgp", origin_asn: AS3333 },
+  //   { source: "rir_alloc", rir: "ripe" }
+  // ],
+  results: [],
   relations: [
     {
       type: "less-specific",
