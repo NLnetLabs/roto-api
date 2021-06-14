@@ -66,14 +66,12 @@ should turn into:
       type: "same_org",
       results: [{ source: "rir_alloc", rir: "ripe" }],
       prefix: "84.205.64.0/19",
-      origin_asn: null,
       rir: "ripe"
     },
     {
       type: "same_org",
       results: [{ source: "rir_alloc", rir: "ripe" }],
       prefix: "93.175.144.0/21",
-      origin_asn: null,
       rir: "ripe"
     },
     {
