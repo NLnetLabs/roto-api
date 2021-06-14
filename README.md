@@ -33,8 +33,8 @@ should turn into:
 ```
 {
   results: [
-    { found: false, source: "bgp", result: null },
-    { found: false, source: "rir_alloc", result: null }
+    { source: "bgp", result: null },
+    { source: "rir_alloc", result: null }
   ],
   relations: [
     {
