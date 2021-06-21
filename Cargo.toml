@@ -8,7 +8,8 @@ edition = "2018"
 
 [dependencies]
 num = "^0.3"
-csv = "^1.1"
-rotonda-store = { path = "/Users/jasper/Projects/rotonda/rotonda-store"}
 ansi_term = "^0.12"
+chrono = "0.4.19"
+csv = "^1.1"
+rotonda-store = { git = "ssh://git@github.com/NLnetLabs/rotonda-store.git", branch = "feature-dynamodb" }
 rustyline = "8.0.0"
