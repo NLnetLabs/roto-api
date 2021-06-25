@@ -375,75 +375,6 @@ impl Store {
         .collect()
     }
 
-
-    pub fn get_related_v4(
-        &self,
-        pfx: &RotondaPrefix<u32, ExtPrefixRecord>,
-    ) -> Vec<&RotondaPrefix<u32, ExtPrefixRecord>> {
-        match pfx.meta.as_ref() {
-            None => Vec::new(),
-            Some(prefix_rec) => match &prefix_rec.0 {
-                // Meta exists, but there's no RirDelExtRecord, the record that
-                // holds the group_id that we use to relate other prefixes.
-                None => vec![],
-                Some(meta) => {
-                    self.v4.store.prefixes
-                    .iter()
-                    .filter(|&rel_p| {
-                        if let Some(rel_p_meta) = rel_p.meta.as_ref() {
-                            if let Some(rel_p_meta_rde)
-                                = rel_p_meta.0.as_ref()
-                            {
-                                rel_p_meta_rde.group_id == meta.group_id
-                            }
-                            else {
-                                return false;
-                            }
-                        }
-                        else {
-                            return false;
-                        }
-                    })
-                    .collect()
-                }
-            },
-        }
-    }
-
-    pub fn get_related_v6(
-        &self,
-        pfx: &RotondaPrefix<u128, ExtPrefixRecord>,
-    ) -> Vec<&RotondaPrefix<u128, ExtPrefixRecord>> {
-        match pfx.meta.as_ref() {
-            None => Vec::new(),
-            Some(prefix_rec) => match &prefix_rec.0 {
-                // Meta exists, but there's no RirDelExtRecord, the record that
-                // holds the group_id that we use to relate other prefixes.
-                None => vec![],
-                Some(meta) => {
-                    self.v6.store.prefixes
-                    .iter()
-                    .filter(|&rel_p| {
-                        if let Some(rel_p_meta) = rel_p.meta.as_ref() {
-                            if let Some(rel_p_meta_rde)
-                                = rel_p_meta.0.as_ref()
-                            {
-                                rel_p_meta_rde.group_id == meta.group_id
-                            }
-                            else {
-                                return false;
-                            }
-                        }
-                        else {
-                            return false;
-                        }
-                    })
-                    .collect()
-                }
-            },
-        }
-    }
-
     pub fn output_stats(&self) {
         println!("IPv4\n----");
         Self::output_tree_stats(&self.v4);
@@ -554,4 +485,5 @@ impl Store {
         }
     }
 }
+
 
