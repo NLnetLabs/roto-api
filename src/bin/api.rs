@@ -1,12 +1,11 @@
-use std::{env, process, thread};
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Body, Request, Response, Server, StatusCode};
+use rir_lir::{Addr, JsonBuilder, Prefix, Store};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use hyper::{Body, Request, Response, Server, StatusCode};
-use hyper::service::{make_service_fn, service_fn};
-use rir_lir::{Addr, Prefix, RecordSet, Store};
+use std::{env, process, thread};
 use tokio::sync::{mpsc, oneshot};
-
 
 //------------ process_tasks -------------------------------------------------
 
@@ -16,32 +15,159 @@ fn process_tasks(
 ) {
     while let Some((prefix, tx)) = queue.blocking_recv() {
         // Build response. Push response to oneshot.
-        unimplemented!()
+        let lmp_rec = store.match_longest_prefix(prefix);
+        println!("{:?}", lmp_rec);
+        let res = JsonBuilder::build(|builder| {
+            builder.member_str("type", "longest-matching");
+            builder.member_str("prefix", prefix);
+            builder.member_array("results", |builder| {
+                for (pfx, value) in lmp_rec.iter() {
+                    if let Some(ext_rec) = value {
+                        builder.array_object(|builder| {
+                            builder.member_str("prefix", pfx);
+                            builder.member_str(
+                                "type",
+                                if ext_rec.0.is_some() {
+                                    "same-org"
+                                } else {
+                                    "less-specific"
+                                },
+                            );
+                            builder.member_array("results", |builder| {
+                                // rir delegated extended records
+                                match &ext_rec.0 {
+                                    Some(rir_del_ext_r) => {
+                                        builder.array_object(|builder| {
+                                            builder.member_str("source", "rir_alloc");
+                                            builder.member_str("rir", rir_del_ext_r.rir);
+                                        });
+                                    }
+                                    None => {}
+                                }
+                                // rishwhois records
+                                match &ext_rec.1 {
+                                    Some(ris_whois_r) => {
+                                        builder.array_object(|builder| {
+                                            builder.member_str("source", "bgp");
+                                            builder.member_array("origin_as", |builder| {
+                                                for asn in ris_whois_r.origin_as.0.iter() {
+                                                    builder.array_str(asn)
+                                                }
+                                            });
+                                            builder.member_str(
+                                                "type",
+                                                if prefix.len == pfx.len {
+                                                    "exact-match"
+                                                } else {
+                                                    "less-specific"
+                                                },
+                                            )
+                                        });
+                                    }
+                                    None => {}
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+
+            for (_pfx, value) in lmp_rec.iter() {
+                if let Some(ext_rec) = value {
+                    if let Some(rir_del_ext_r) = &ext_rec.0 {
+                        let rel_rec = store.get_related_prefixes(rir_del_ext_r);
+                        builder.member_array("relations", |builder| {
+                            for (pfx, value) in rel_rec.iter() {
+                                builder.array_object(|builder| {
+                                    builder.member_str("prefix", pfx);
+                                    builder.member_str("type", "same-org");
+                                    builder.member_array("results", |builder| {
+                                        if let Some(ext_rec) = value {
+                                            match &ext_rec.0 {
+                                                Some(rir_del_ext_r) => {
+                                                    builder.array_object(|builder| {
+                                                        builder.member_str("source", "rir_alloc");
+                                                        builder
+                                                            .member_str("rir", rir_del_ext_r.rir);
+                                                    });
+                                                }
+                                                None => {}
+                                            }
+                                            match &ext_rec.1 {
+                                                Some(ris_whois_r) => {
+                                                    builder.array_object(|builder| {
+                                                        builder.member_str("source", "bgp");
+                                                        builder.member_array(
+                                                            "origin_as",
+                                                            |builder| {
+                                                                for asn in
+                                                                    ris_whois_r.origin_as.0.iter()
+                                                                {
+                                                                    builder.array_str(asn)
+                                                                }
+                                                            },
+                                                        );
+                                                    });
+                                                }
+                                                None => {}
+                                            }
+                                        }
+                                    })
+                                });
+                            }
+                        })
+                    }
+                }
+            }
+        });
+        let _err = tx.send(
+            Response::builder()
+                .status(hyper::StatusCode::OK)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .body(hyper::Body::from(res))
+                .unwrap(),
+        );
     }
 }
-
 
 //------------ process_request -----------------------------------------------
 
 async fn process_request(
     req: Request<Body>,
-    tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>
+    tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) -> Result<Response<Body>, Infallible> {
+    println!("got request");
     let mut url = req.uri().path().split("/");
-    let addr = match url.next().and_then(|s| Addr::from_str(s).ok()) {
+    println!("{:?}", req.uri().path());
+    println!("{:?}", url);
+    let _slash = url.next();
+
+    let addr = match url.next().and_then(|s| {
+        println!("s {}", s);
+        Addr::from_str(s).ok()
+    }) {
         Some(addr) => addr,
-        None => return not_found(),
+        None => {
+            println!("no parse addr");
+            return not_found();
+        }
     };
     let len = match url.next().and_then(|s| u8::from_str(s).ok()) {
         Some(len) => len,
-        None => return not_found()
+        None => {
+            println!("no parse len");
+            return not_found();
+        }
     };
     if url.next().as_ref() != Some(&"search") {
-        return not_found()
+        println!("no parse action");
+        return not_found();
     }
     if url.next().is_some() {
-        return not_found()
+        println!("found too much crap");
+        return not_found();
     }
+    println!("got here");
 
     let (resp_tx, resp_rx) = oneshot::channel();
     if tx.send((Prefix::new(addr, len), resp_tx)).await.is_err() {
@@ -51,17 +177,20 @@ async fn process_request(
 }
 
 fn not_found() -> Result<Response<Body>, Infallible> {
-    Ok(
-        Response::builder()
+    Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())
-        .unwrap()
-    )
+        .header(hyper::header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            r#"{"results": null, "error": true, "error_msg": "Cannot parse the query"}"#
+                .to_string(),
+        ))
+        .unwrap())
 }
 
 fn internal_server_error() -> Response<Body> {
-        Response::builder()
+    Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .header(hyper::header::CONTENT_TYPE, "application/json")
         .body(Body::empty())
         .unwrap()
 }
@@ -101,18 +230,12 @@ async fn main() {
 
     let mut store = Store::new();
     if let Err(err) = store.load_prefixes(prefix_path.as_ref()) {
-        eprintln!(
-            "Failed to load {}: {}",
-            prefix_path, err
-        );
+        eprintln!("Failed to load {}: {}", prefix_path, err);
         process::exit(1);
     }
     for path in args {
         if let Err(err) = store.load_riswhois(path.as_ref()) {
-            eprintln!(
-                "Failed to load {}: {}",
-                path, err
-            );
+            eprintln!("Failed to load {}: {}", path, err);
             process::exit(1);
         }
     }
@@ -134,6 +257,7 @@ async fn main() {
         }
     });
 
+    println!("bind server at {}...", listen);
     let server = Server::bind(&listen).serve(make_svc);
 
     // Run this server for... forever!
@@ -141,4 +265,3 @@ async fn main() {
         eprintln!("server error: {}", e);
     }
 }
-
