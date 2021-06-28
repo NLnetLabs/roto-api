@@ -85,3 +85,22 @@ should turn into:
 ```
 
 (yes, sorry, this is actual JS, should be JSON, but you get the gist)
+
+# Sources
+
+### delegated extended
+
+https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
+https://ftp.apnic.net/pub/stats/apnic/delegated-apnic-extended-latest
+https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
+https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
+https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
+
+### RisWhois
+#### IPv4
+
+https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
+
+#### IPv6
+
+https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
