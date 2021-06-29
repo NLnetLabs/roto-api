@@ -204,9 +204,9 @@ impl MergeUpdate for ExtPrefixRecord {
                 Some(ris_whois_rec) => {
                     if let Some(update_ris_rec) = update_record.1 {
                         ris_whois_rec
-                            .origin_as
+                            .origin_asns
                             .0
-                            .push(update_ris_rec.origin_as.0[0]);
+                            .push(update_ris_rec.origin_asns.0[0]);
                     }
                 }
                 None => {
@@ -243,7 +243,7 @@ impl fmt::Display for AsnArray {
 }
 #[derive(Clone, Debug)]
 pub struct RisWhoisRecord {
-    pub origin_as: AsnArray,
+    pub origin_asns: AsnArray,
 }
 #[derive(Copy, Clone, Debug)]
 pub struct Asn(u32);
@@ -305,7 +305,7 @@ impl Store {
             let meta = ExtPrefixRecord(
                 None,
                 Some(RisWhoisRecord {
-                    origin_as: AsnArray(vec![asn]),
+                    origin_asns: AsnArray(vec![asn]),
                 }),
             );
 

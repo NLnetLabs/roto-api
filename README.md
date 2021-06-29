@@ -14,7 +14,7 @@ This sample output from the CLI:
 Searching for prefix: 193.0.10.0/24
 Found less-specific and exactly matching prefixes: [
     193.0.0.0/20 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), None)),
-    193.0.10.0/23 with Some(ExtPrefixRecord(None, Some(RisWhoisRecord { origin_as: ["3333"] }))),
+    193.0.10.0/23 with Some(ExtPrefixRecord(None, Some(RisWhoisRecord { origin_asns: ["3333"] }))),
 ]
 Found prefixes allocated to same organisation as prefix 3238002688/20:
 [
@@ -22,7 +22,7 @@ Found prefixes allocated to same organisation as prefix 3238002688/20:
     193.0.16.0/21 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), None)),
     84.205.64.0/19 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), None)),
     93.175.144.0/21 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), None)),
-    93.175.159.0/24 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), Some(RisWhoisRecord { origin_as: ["12859"] }))),
+    93.175.159.0/24 with Some(ExtPrefixRecord(Some(RirDelExtRecord { group_id: "4db2a3e7-2296-45c2-83dd-f9195bb76d14", rir: RipeNcc }), Some(RisWhoisRecord { origin_asns: ["12859"] }))),
 ]
 ```
 
@@ -39,7 +39,7 @@ should turn into:
   // would have the same result types as the
   // `relations` structure:
   // [
-  //   { source: "bgp", origin_asn: AS3333 },
+  //   { source: "bgp", origin_asns: AS3333 },
   //   { source: "rir_alloc", rir: "ripe" }
   // ],
   results: [],
@@ -52,7 +52,7 @@ should turn into:
     {
       type: "less_specific",
       results: [
-        { source: "bgp", origin_asn: "AS3333" },
+        { source: "bgp", origin_asns: "AS3333" },
         { source: "rir_alloc", rir: "ripe" }
       ],
       prefix: "193.0.10.0/23"
@@ -76,7 +76,7 @@ should turn into:
       type: "same_org",
       results: [
         { source: "rir_alloc", rir: "ripe" },
-        { source: "bgp", origin_asn: "AS12859" }
+        { source: "bgp", origin_asns: "AS12859" }
       ],
       prefix: "93.175.159.0/24"
     }

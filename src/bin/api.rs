@@ -51,8 +51,8 @@ fn process_tasks(
                                     Some(ris_whois_r) => {
                                         builder.array_object(|builder| {
                                             builder.member_str("source", "bgp");
-                                            builder.member_array("origin_as", |builder| {
-                                                for asn in ris_whois_r.origin_as.0.iter() {
+                                            builder.member_array("origin_asns", |builder| {
+                                                for asn in ris_whois_r.origin_asns.0.iter() {
                                                     builder.array_str(asn)
                                                 }
                                             });
@@ -103,8 +103,8 @@ fn process_tasks(
                                         Some(ris_whois_r) => {
                                             builder.array_object(|builder| {
                                                 builder.member_str("source", "bgp");
-                                                builder.member_array("origin_as", |builder| {
-                                                    for asn in ris_whois_r.origin_as.0.iter() {
+                                                builder.member_array("origin_asns", |builder| {
+                                                    for asn in ris_whois_r.origin_asns.0.iter() {
                                                         builder.array_str(asn)
                                                     }
                                                 });
@@ -135,8 +135,8 @@ fn process_tasks(
                                         Some(ris_whois_r) => {
                                             builder.array_object(|builder| {
                                                 builder.member_str("source", "bgp");
-                                                builder.member_array("origin_as", |builder| {
-                                                    for asn in ris_whois_r.origin_as.0.iter() {
+                                                builder.member_array("origin_asns", |builder| {
+                                                    for asn in ris_whois_r.origin_asns.0.iter() {
                                                         builder.array_str(asn)
                                                     }
                                                 });
