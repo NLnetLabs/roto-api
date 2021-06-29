@@ -24,7 +24,7 @@ fn process_tasks(
                 None
             }
         });
-        let less_spec_results = cc.iter().filter(|(p, _r)| p.len != prefix.len);
+        // let less_spec_and_exact_match_results = cc.iter().filter(|(p, _r)| p.len != prefix.len);
         println!("exact match {:?}", exact_match);
 
         let res = JsonBuilder::build(|builder| {
@@ -76,7 +76,8 @@ fn process_tasks(
 
             // Look for the longest-matching prefix with a DelExtRecord.
             // The vecs in a RecordSet are ordered from least to most specific,
-            // hence the reverse.
+            // hence the reverse. The resulting prefix is used to lookup all the
+            // related prefixes.
             if let Some(lmp_rel_rec) = recs.reverse().iter().find_map(|(_p, r)| match r {
                 Some(rec) => rec.0.as_ref(),
                 None => None,
@@ -116,7 +117,7 @@ fn process_tasks(
                             })
                         });
                     }
-                    for (pfx, value) in less_spec_results {
+                    for (pfx, value) in cc.iter() {
                         builder.array_object(|builder| {
                             builder.member_str("prefix", pfx);
                             builder.member_str("type", "less-specific");
