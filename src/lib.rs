@@ -100,6 +100,12 @@ impl<'a> RecordSet<'a> {
             v6: self.v6.iter(),
         }
     }
+
+    pub fn reverse(mut self) -> RecordSet<'a> {
+        self.v4.reverse();
+        self.v6.reverse();
+        self
+    }
 }
 
 //------------ RecordSetIter -------------------------------------------------
@@ -219,13 +225,12 @@ pub struct RirDelExtRecord {
     pub rir: Rir,
 }
 
+// Not really used right now, since the
+// impl Display isn't used either. May make sense
+// to redefine Asn to be an enum that can either
+// be a u32 or a PRIVATE_ASN.
 #[derive(Clone, Debug)]
 pub struct AsnArray(pub Vec<Asn>);
-
-#[derive(Clone, Debug)]
-pub struct RisWhoisRecord {
-    pub origin_as: AsnArray,
-}
 
 impl fmt::Display for AsnArray {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -236,18 +241,16 @@ impl fmt::Display for AsnArray {
         write!(f, "{}", arr_str)
     }
 }
-
-// Not really used right now, since the
-// impl Display isn't used either. May make sense
-// to redefine Asn to be an enum that can either
-// be a u32 or a PRIVATE_ASN.
+#[derive(Clone, Debug)]
+pub struct RisWhoisRecord {
+    pub origin_as: AsnArray,
+}
 #[derive(Copy, Clone, Debug)]
 pub struct Asn(u32);
 
-// Unused
 impl fmt::Display for Asn {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "AS{},", self.0)
+        write!(f, "AS{}", self.0)
     }
 }
 
