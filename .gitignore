@@ -62,5 +62,4 @@ __pycache__/
 **node_modules
 
 ## This repo 
-/data/benchmarks
-/data/tests
+/data
