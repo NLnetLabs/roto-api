@@ -9,19 +9,19 @@ else
 fi
 
 echo delegated-afrinic-extended-latest
-curl -o downloads/del_ext/delegated-afrinic-extended-latest.txt ftp://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
+curl -Ro downloads/del_ext/delegated-afrinic-extended-latest.txt https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
 
 echo delegated-apnic-extended-latest
-curl -o downloads/del_ext/delegated-apnic-extended-latest.txt ftp://ftp.apnic.net/pub/stats/apnic/delegated-apnic-extended-latest
+curl -Ro downloads/del_ext/delegated-apnic-extended-latest.txt https://ftp.apnic.net/pub/stats/apnic/delegated-apnic-extended-latest
 
 echo delegated-arin-extended-latest
-curl -o downloads/del_ext/delegated-arin-extended-latest.txt ftp://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
+curl -Ro downloads/del_ext/delegated-arin-extended-latest.txt https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
 
 echo delegated-lacnic-extended-latest
-curl -o downloads/del_ext/delegated-lacnic-extended-latest.txt ftp://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
+curl -Ro downloads/del_ext/delegated-lacnic-extended-latest.txt https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
 
 echo delegated-ripencc-extended-latest
-curl -o downloads/del_ext/delegated-ripencc-extended-latest.txt ftp://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
+curl -Ro downloads/del_ext/delegated-ripencc-extended-latest.txt https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
 
 echo concatenate all
 cat downloads/del_ext/delegated-afrinic-extended-latest.txt > data/delegated_all.csv && \

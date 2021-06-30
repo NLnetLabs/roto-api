@@ -9,11 +9,11 @@ else
 fi
 
 echo RISWHois IPv4
-curl -o downloads/riswhois/riswhoisdump-ipv4.gz http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
+curl -Ro downloads/riswhois/riswhoisdump-ipv4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
 gunzip downloads/riswhois/riswhoisdump-ipv4.gz
 
 echo RISWhois IPv6
-curl -o downloads/riswhois/riswhoisdump-ipv6.gz http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
+curl -Ro downloads/riswhois/riswhoisdump-ipv6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
 gunzip downloads/riswhois/riswhoisdump-ipv6.gz
 
 echo Refactor RISWhois
