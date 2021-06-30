@@ -1,0 +1,22 @@
+#/bin/bash
+
+if [ -f data/delegated_all.csv ];then
+   echo "skipping downloading rir delegated (already there). use download-del-ext to update"
+else 
+   echo "downloading rir delegated extended files..."
+   ./scripts/download-del-ext
+fi
+
+if [ ! -f data/pfx_asn_dfz_v4.csv ];then
+    echo "downloading riswhois files..."
+    ./scripts/download-ris-whois
+else
+  echo "skipping downloading riswhois (already there). use download-riswhois to update"
+fi
+
+echo "starting roto-api-dev..."
+if [ -f target/release/api ];then
+    target/release/api 127.0.0.1:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+else
+    cargo run --release --bin api -- 127.0.0.1:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+fi
