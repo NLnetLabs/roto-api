@@ -8,6 +8,10 @@ else
     mkdir -p downloads/riswhois/old
 fi
 
+if [ ! -d data ]; then
+   mkdir data
+fi
+
 echo RISWHois IPv4
 curl -Ro downloads/riswhois/riswhoisdump-ipv4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
 gunzip downloads/riswhois/riswhoisdump-ipv4.gz
