@@ -7,6 +7,8 @@ use std::str::FromStr;
 use std::{env, process, thread};
 use tokio::sync::{mpsc, oneshot};
 
+const CURRENT_API_VERSION: &str = "v1";
+
 //------------ process_tasks -------------------------------------------------
 
 fn process_tasks(
@@ -177,14 +179,26 @@ async fn process_request(
 
     let _slash = url.next();
 
-    if url.next().as_ref() != Some(&"v1") {
+    // We're accepting both "/v1" and "/api/v1", as to accomodate
+    // both single-domain API/UI and separate domain hosting.
+    let api_v1 = url.next();
+
+    if api_v1.as_ref() != Some(&CURRENT_API_VERSION) && api_v1.as_ref() != Some(&"api") {
         return not_found(Some(
-            "Cannot parse query. Request url should start with `/v1`".to_string(),
+            "Cannot parse query. Request url should start with `[api]/v1`".to_string(),
+        ));
+    }
+
+    if api_v1.as_ref() == Some(&"api") && url.next().as_ref() != Some(&"v1") {
+        return not_found(Some(
+            "Cannot parse query. Request url should start with `[api]/v1`".to_string(),
         ));
     }
 
     if url.next().as_ref() != Some(&"prefix") {
-        return not_found(Some("Cannot parse resource. Current resources are: `prefix`".to_string()));
+        return not_found(Some(
+            "Cannot parse resource. Current resources are: `prefix`".to_string(),
+        ));
     }
 
     let addr = match url.next().and_then(|s| {
