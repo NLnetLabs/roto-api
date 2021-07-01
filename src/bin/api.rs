@@ -156,8 +156,12 @@ fn process_tasks(
             Response::builder()
                 .status(hyper::StatusCode::OK)
                 .header(hyper::header::CONTENT_TYPE, "application/json")
+                .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+                .header(hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,"DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range")
+                .header(hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS,"Content-Length,Content-Range")
+                .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .body(hyper::Body::from(res))
-                .unwrap(),
+                .unwrap()
         );
     }
 }
@@ -212,10 +216,20 @@ fn not_found() -> Result<Response<Body>, Infallible> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header(hyper::header::CONTENT_TYPE, "application/json")
-        .body(Body::from(
-            r#"{"results": null, "error": true, "error_msg": "Cannot parse the query"}"#
-                .to_string(),
-        ))
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+        .header(
+            hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+            "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range",
+        )
+        .header(
+            hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS,
+            "Content-Length,Content-Range",
+        )
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+        .body(Body::from(format!(
+            "{{\"results\": null, \"error\": true, \"error_msg\": \"{}\"}}",
+            description.unwrap_or("cannot parse query".to_string())
+        )))
         .unwrap())
 }
 
@@ -223,6 +237,16 @@ fn internal_server_error() -> Response<Body> {
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
         .header(hyper::header::CONTENT_TYPE, "application/json")
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+        .header(
+            hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+            "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range",
+        )
+        .header(
+            hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS,
+            "Content-Length,Content-Range",
+        )
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::empty())
         .unwrap()
 }
