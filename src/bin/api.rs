@@ -195,7 +195,14 @@ async fn process_request(
         ));
     }
 
-    if url.next().as_ref() != Some(&"prefix") {
+    // If a call to /[api]/v1 is made with any further stuff, we'll
+    // return a pong with version info
+    let resource = url.next();
+    if resource.is_none() || resource == Some(&"") {
+        return Ok(api_info())
+    }
+
+    if resource.as_ref() != Some(&"prefix") {
         return not_found(Some(
             "Cannot parse resource. Current resources are: `prefix`".to_string(),
         ));
@@ -275,6 +282,26 @@ fn internal_server_error() -> Response<Body> {
         )
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::empty())
+        .unwrap()
+}
+
+fn api_info() -> Response<Body> {
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .header(hyper::header::CONTENT_TYPE, "application/json")
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+        .header(
+            hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+            "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range",
+        )
+        .header(
+            hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS,
+            "Content-Length,Content-Range",
+        )
+        .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+        .body(Body::from(
+            r#"{"api_name": "roto-api", "version": "0.10-dev"}"#,
+        ))
         .unwrap()
 }
 
