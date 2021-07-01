@@ -172,11 +172,20 @@ async fn process_request(
     req: Request<Body>,
     tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) -> Result<Response<Body>, Infallible> {
-    println!("got request");
     let mut url = req.uri().path().split("/");
     println!("{:?}", req.uri().path());
-    println!("{:?}", url);
+
     let _slash = url.next();
+
+    if url.next().as_ref() != Some(&"v1") {
+        return not_found(Some(
+            "Cannot parse query. Request url should start with `/v1`".to_string(),
+        ));
+    }
+
+    if url.next().as_ref() != Some(&"prefix") {
+        return not_found(Some("Cannot parse resource. Current resources are: `prefix`".to_string()));
+    }
 
     let addr = match url.next().and_then(|s| {
         println!("s {}", s);
@@ -184,26 +193,30 @@ async fn process_request(
     }) {
         Some(addr) => addr,
         None => {
-            println!("no parse addr");
-            return not_found();
+            println!("address parse failure");
+            return not_found(Some("Cannot parse address part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
         }
     };
     let len = match url.next().and_then(|s| u8::from_str(s).ok()) {
         Some(len) => len,
         None => {
-            println!("no parse len");
-            return not_found();
+            println!("length parse failure");
+            return not_found(Some("Cannot parse length part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
         }
     };
     if url.next().as_ref() != Some(&"search") {
-        println!("no parse action");
-        return not_found();
+        println!("action parse failure");
+        return not_found(Some(
+            "Cannot parse action part of the prefix. Current actions are: `search`.".to_string(),
+        ));
     }
     if url.next().is_some() {
-        println!("found too much crap");
-        return not_found();
+        println!("trailing stuff failure");
+        return not_found(Some(
+            "Found trailing statements beyon the action part. Please remove those.".to_string(),
+        ));
     }
-    println!("got here");
+    println!("--- end request ---");
 
     let (resp_tx, resp_rx) = oneshot::channel();
     if tx.send((Prefix::new(addr, len), resp_tx)).await.is_err() {
@@ -212,7 +225,7 @@ async fn process_request(
     Ok(resp_rx.await.unwrap_or_else(|_| internal_server_error()))
 }
 
-fn not_found() -> Result<Response<Body>, Infallible> {
+fn not_found(description: Option<String>) -> Result<Response<Body>, Infallible> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header(hyper::header::CONTENT_TYPE, "application/json")
