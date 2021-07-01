@@ -287,7 +287,7 @@ fn internal_server_error() -> Response<Body> {
 
 fn api_info() -> Response<Body> {
     Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .status(StatusCode::OK)
         .header(hyper::header::CONTENT_TYPE, "application/json")
         .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
         .header(
