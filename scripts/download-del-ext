@@ -41,10 +41,10 @@ cat downloads/del_ext/delegated-lacnic-extended-latest.txt >> data/delegated_all
 cat downloads/del_ext/delegated-ripencc-extended-latest.txt >> data/delegated_all.csv
 
 echo write timestamps
-echo { > downloads/del_ext/timestamps.json
+echo { > data/del_ext.timestamps.json
 echo \"afrinic\": `stat -c %Y downloads/del_ext/delegated-afrinic-extended-latest.txt`, >> data/del_ext.timestamps.json
 echo \"apnic\": `stat -c %Y downloads/del_ext/delegated-apnic-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo \"arin\": `stat -c %Y downloads/del_ext/delegated-aric-extended-latest.txt`, >> data/del_ext.timestamps.json
+echo \"arin\": `stat -c %Y downloads/del_ext/delegated-arin-extended-latest.txt`, >> data/del_ext.timestamps.json
 echo \"lacnic\": `stat -c %Y downloads/del_ext/delegated-lacnic-extended-latest.txt`, >> data/del_ext.timestamps.json
 echo \"ripencc\": `stat -c %Y downloads/del_ext/delegated-ripencc-extended-latest.txt` >> data/del_ext.timestamps.json
 echo } >> data/del_ext.timestamps.json

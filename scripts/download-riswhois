@@ -31,7 +31,7 @@ rg -e '(\d+)\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\d+)\t(\d+)' -N --replace '$
 rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhoisdump-ipv6 > data/pfx_asn_dfz_v6.csv
 
 echo write timestamps
-echo { > data/del_ext.timestamps.json
+echo { > data/riswhois.timestamps.json
 echo \"ipv4\": `stat -c %Y downloads/riswhois/riswhoisdump-ipv4`, >> data/riswhois.timestamps.json
 echo \"ipv6\": `stat -c %Y downloads/riswhois/riswhoisdump-ipv6`, >> data/riswhois.timestamps.json
-echo } >> data/del_ext.timestamps.json
+echo } >> data/riswhois.timestamps.json
