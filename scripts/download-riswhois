@@ -9,7 +9,7 @@ cd ..
 # Create the whole dir if it doesn't exist
 # Also move the exsiting files into downloads/_/old
 if [ -d downloads/riswhois/old ];then
-    mv -f downloads/riswhois/riswhois* downloads/ris_whois/old/
+    mv -f downloads/riswhois/riswhois* downloads/riswhois/old/
 else
     mkdir -p downloads/riswhois/old
 fi
@@ -19,11 +19,11 @@ if [ ! -d data ]; then
 fi
 
 echo RISWHois IPv4
-curl -Ro downloads/riswhois/riswhoisdump-ipv4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
+curl -RsD downloads/riswhois4_h.txt -o downloads/riswhois/riswhoisdump-ipv4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
 gunzip -f downloads/riswhois/riswhoisdump-ipv4.gz
 
 echo RISWhois IPv6
-curl -Ro downloads/riswhois/riswhoisdump-ipv6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
+curl -RsD downloads/riswhois6_h.txt -o downloads/riswhois/riswhoisdump-ipv6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
 gunzip -f downloads/riswhois/riswhoisdump-ipv6.gz
 
 echo Refactor RISWhois
@@ -32,6 +32,12 @@ rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloa
 
 echo write timestamps
 echo { > data/riswhois.timestamps.json
-echo \"ipv4\": `stat -c %Y downloads/riswhois/riswhoisdump-ipv4`, >> data/riswhois.timestamps.json
-echo \"ipv6\": `stat -c %Y downloads/riswhois/riswhoisdump-ipv6`, >> data/riswhois.timestamps.json
+echo \"ipv4\": { >> data/riswhois.timestamps.json
+echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv4`, >> data/riswhois.timestamps.json
+echo -e '\t"last_modified_header": "'`cat downloads/riswhois4_h.txt | rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
+echo -e '},' >> data/riswhois.timestamps.json
+echo \"ipv6\": { >> data/riswhois.timestamps.json
+echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv6`, >> data/riswhois.timestamps.json
+echo -e '\t"last_modified_header": "'`cat downloads/riswhois6_h.txt | rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
+echo } >> data/riswhois.timestamps.json
 echo } >> data/riswhois.timestamps.json
