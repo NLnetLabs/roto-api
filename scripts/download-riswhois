@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# move to the dir of the repo
+cd "$(dirname "$0")"
+cd ..
+
 # Create the whole dir if it doesn't exist
 # Also move the exsiting files into downloads/_/old
 if [ -d downloads/riswhois/old ];then
