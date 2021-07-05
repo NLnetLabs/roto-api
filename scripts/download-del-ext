@@ -3,7 +3,7 @@
 
 if [ $1 != "--all" ] && [ "$1" != "afrinic" ] && [ $1 != "apnic" ] && [ $1 != "arin" ] && [ $1 != "lacnic" ] && [ $1 != "ripencc" ]; then
   echo "download delegated extended files from RIRs"
-  echo "usage: download-del-ext [afrinic|apinic|arin|lacnic|ripencc] [--all]"
+  echo "usage: download-del-ext [afrinic|apinic|arin|lacnic|ripencc| --all]"
   exit 0
 fi
 

@@ -4,7 +4,7 @@
 
 if [ "$1" != "--all" ] && [ "$1" != "4" ] && [ "$1" != "6" ]; then
   echo "download delegated extended files from RIRs"
-  echo "usage: download-riswhois [4|6] [--all]"
+  echo "usage: download-riswhois [4|6| --all]"
   exit 0
 fi
 

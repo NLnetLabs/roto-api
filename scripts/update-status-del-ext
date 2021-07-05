@@ -1,4 +1,13 @@
 #!/bin/bash
+
+arg="$1"
+
+if [ "$1" != "" ] && [ "$1" != "--dry-run" ]; then
+  echo "download delegated extended files from RIRs"
+  echo "usage: update-status-del-ext [--dry-run]"
+  exit 0
+fi
+
 # move to the dir of the repo this script is in
 cd "$(dirname "$0")"
 cd ..
@@ -25,15 +34,22 @@ for rir in afrinic,https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-e
 	else
 		echo CHANGED
 		changed=true
-		echo downloading $2
-		scripts/download-del-ext "$1"
+		if [ "$arg" != "--dry-run" ]; then
+			echo downloading $2
+			scripts/download-del-ext "$1"
+		fi
 	fi
 done
 
-if [ $changed = true ]; then
-echo -------------------
-	echo restarting roto-api daemon...
-	systemctl restart roto-api
+if [ "$arg" != "--dry-run" ]; then
+	if [ "$changed" = true ]; then
+		echo -------------------
+			echo restarting roto-api daemon...
+			systemctl restart roto-api
+		else
+			echo no updates, exiting...
+	fi
 else
-	echo no updates, exiting...
+	echo changed="$changed"
+	echo this was a dry-run, no files were changed
 fi

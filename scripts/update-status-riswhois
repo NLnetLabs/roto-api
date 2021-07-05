@@ -1,7 +1,17 @@
 #!/bin/bash
+
+
+arg="$1"
+if [ "$arg" != "" ] && [ "$arg" != "--dry-run" ]; then
+  echo "download delegated extended files from RIRs"
+  echo "usage: update-status-riswhois [--dry-run]"
+  exit 0
+fi
+
 # move to the dir of the repo this script is in
 cd "$(dirname "$0")"
 cd ..
+
 
 for riswhois in \
 	riswhois4,www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz, \
@@ -20,13 +30,15 @@ for riswhois in \
 		echo UNCHANGED
 	else
 		echo CHANGED
-		echo downloading $2
-		scripts/download-riswhois "$1"
-        if [ $1 = "riswhois6" ]; then
-            echo "restarting roto-api daemon..."
-            systemctl restart roto-api
-        else
-            echo no new ipv6 files, exiting...
+        if [ "$arg" != "--dry-run" ]; then
+            echo downloading $2
+            scripts/download-riswhois "$1"
+            if [ $1 = "riswhois6" ]; then
+                echo "restarting roto-api daemon..."
+                systemctl restart roto-api
+            else
+                echo no new ipv6 files, exiting...
+            fi
         fi
 	fi
 done
