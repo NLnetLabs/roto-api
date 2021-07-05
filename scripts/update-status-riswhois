@@ -1,0 +1,32 @@
+#!/bin/bash
+# move to the dir of the repo this script is in
+cd "$(dirname "$0")"
+cd ..
+
+for riswhois in \
+	riswhois4,www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz, \
+	riswhois6,www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz \
+;do IFS=","
+	set -- $riswhois
+	echo ----------------------------------
+	echo "$1" | tr [a-z] [A-Z]
+	cur_ts=`cat downloads/"$1"_h.txt | rg -e '^Last-Modified: (.+)$' --replace '$1'`
+	echo local download time: $cur_ts
+
+	next_ts=`curl -s --HEAD $2 | rg -e '^Last-Modified: (.+)$' --replace '$1'`
+	echo remote download time: $next_ts
+
+	if [ "$cur_ts" = "$next_ts" ]; then
+		echo UNCHANGED
+	else
+		echo CHANGED
+		echo downloading $2
+		scripts/download-riswhois "$1"
+        if [ $1 = "riswhois6" ]; then
+            echo "restarting roto-api daemon..."
+            systemctl restart roto-api
+        else
+            echo no new ipv6 files, exiting...
+        fi
+	fi
+done

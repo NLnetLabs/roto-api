@@ -1,6 +1,11 @@
 #!/bin/bash
-
 # only works on Linux
+
+if [ $1 != "--all" ] && [ "$1" != "afrinic" ] && [ $1 != "apnic" ] && [ $1 != "arin" ] && [ $1 != "lacnic" ] && [ $1 != "ripencc" ]; then
+  echo "download delegated extended files from RIRs"
+  echo "usage: download-del-ext [afrinic|apinic|arin|lacnic|ripencc] [--all]"
+  exit 0
+fi
 
 # move to the dir of the repo this script is in
 cd "$(dirname "$0")"
@@ -18,20 +23,30 @@ if [ ! -d data ];then
   mkdir data
 fi
 
-echo delegated-afrinic-extended-latest
-curl -RsD downloads/afrinic_h.txt -o downloads/del_ext/delegated-afrinic-extended-latest.txt https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
+if [ $1 = "afrinic" ] || [  $1 = "--all" ]; then
+  echo download delegated-afrinic-extended-latest
+  curl -RsD downloads/afrinic_h.txt -o downloads/del_ext/delegated-afrinic-extended-latest.txt https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
+fi
 
-echo delegated-apnic-extended-latest
+if [ $1 ="apnic" ] || [ $1 = "--all" ]; then
+echo download delegated-apnic-extended-latest
 curl -RsD downloads/apnic_h.txt -o downloads/del_ext/delegated-apnic-extended-latest.txt https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest
+fi
 
-echo delegated-arin-extended-latest
+if [ $1 = "arin" ] || [ $1 = "--all" ]; then
+echo download delegated-arin-extended-latest
 curl -RsD downloads/arin_h.txt -o downloads/del_ext/delegated-arin-extended-latest.txt https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
+fi
 
-echo delegated-lacnic-extended-latest
+if [ $1 = "lacnic" ] || [ $1 = "--all" ]; then
+echo download delegated-lacnic-extended-latest
 curl -RsD downloads/lacnic_h.txt -o downloads/del_ext/delegated-lacnic-extended-latest.txt https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
+fi
 
-echo delegated-ripencc-extended-latest
+if [ $1 = "ripencc" ] || [ $1 = "--all" ]; then
+echo download delegated-ripencc-extended-latest
 curl -RsD downloads/ripencc_h.txt -o downloads/del_ext/delegated-ripencc-extended-latest.txt https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
+fi
 
 echo concatenate all
 cat downloads/del_ext/delegated-afrinic-extended-latest.txt > data/delegated_all.csv && \

@@ -3,13 +3,13 @@
 cd "$(dirname "$0")"
 cd ..
 
+changed=false
+
 for rir in afrinic,https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest, \
 	apnic,https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest, \
 	arin,https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest, \
 	lacnic,https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest,  \
 	ripencc,https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest, \
-	riswhois4,www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz, \
-	riswhois6,www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz \
 ;do IFS=","
 	set -- $rir
 	echo ----------------------------------
@@ -24,5 +24,16 @@ for rir in afrinic,https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-e
 		echo UNCHANGED
 	else
 		echo CHANGED
+		changed=true
+		echo downloading $2
+		scripts/download-del-ext "$1"
 	fi
 done
+
+if [ $changed = true ]; then
+echo -------------------
+	echo restarting roto-api daemon...
+	systemctl restart roto-api
+else
+	echo no updates, exiting...
+fi
