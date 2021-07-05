@@ -14,7 +14,7 @@ cd ..
 # Create the whole dir if it doesn't exist
 # Also move the exsiting files into downloads/_/old
 if [ -d downloads/del_ext/old ];then
-    mv -f downloads/del_ext/delegated-* downloads/del_ext/old/
+    mv -f downloads/del_ext/delegated-"$1"-extended-latest.txt downloads/del_ext/old/
 else
    mkdir -p downloads/del_ext/old
 fi
@@ -28,7 +28,7 @@ if [ $1 = "afrinic" ] || [  $1 = "--all" ]; then
   curl -RsD downloads/afrinic_h.txt -o downloads/del_ext/delegated-afrinic-extended-latest.txt https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
 fi
 
-if [ $1 ="apnic" ] || [ $1 = "--all" ]; then
+if [ $1 = "apnic" ] || [ $1 = "--all" ]; then
 echo download delegated-apnic-extended-latest
 curl -RsD downloads/apnic_h.txt -o downloads/del_ext/delegated-apnic-extended-latest.txt https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest
 fi

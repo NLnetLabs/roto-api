@@ -2,9 +2,9 @@
 
 # only works on Linux
 
-if [ "$1" != "--all" ] && [ "$1" != "4" ] && [ "$1" != "6" ]; then
+if [ "$1" != "--all" ] && [ "$1" != "riswhois4" ] && [ "$1" != "riswhois6" ]; then
   echo "download delegated extended files from RIRs"
-  echo "usage: download-riswhois [4|6| --all]"
+  echo "usage: download-riswhois [riswhois4|riswhois6| --all]"
   exit 0
 fi
 
@@ -15,8 +15,7 @@ cd ..
 # Create the whole dir if it doesn't exist
 # Also move the exsiting files into downloads/_/old
 if [ -d downloads/riswhois/old ]; then
-    mv -f downloads/riswhois/riswhois-ipv"$1"* downloads/riswhois/old/
-    mv -f downloads/timestamps.json downloads/riswhois/old/
+    mv -f downloads/riswhois/"$1" downloads/riswhois/old/
 else
     mkdir -p downloads/riswhois/old
 fi
@@ -25,21 +24,21 @@ if [ ! -d data ]; then
    mkdir data
 fi
 
-if [ "$1" = "4" ] || [ "$1" = "--all" ]; then
+if [ "$1" = "riswhois4" ] || [ "$1" = "--all" ]; then
     echo RISWHois IPv4
-    curl -RsD downloads/riswhois4_h.txt -o downloads/riswhois/riswhoisdump-ipv4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
-    gunzip -f downloads/riswhois/riswhoisdump-ipv4.gz
+    curl -RsD downloads/riswhois4_h.txt -o downloads/riswhois/riswhois4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
+    gunzip -f downloads/riswhois/riswhois4.gz
+    echo Refactor RISWhois
+    rg -e '(\d+)\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\d+)\t(\d+)' -N --replace '$2,$3,$1' downloads/riswhois/riswhois4 > data/pfx_asn_dfz_v4.csv
 fi
 
-if [ "$1" = "6" ] || [ "$1" = "--all" ]; then
+if [ "$1" = "riswhois6" ] || [ "$1" = "--all" ]; then
     echo RISWhois IPv6
-    curl -RsD downloads/riswhois6_h.txt -o downloads/riswhois/riswhoisdump-ipv6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
-    gunzip -f downloads/riswhois/riswhoisdump-ipv6.gz
+    curl -RsD downloads/riswhois6_h.txt -o downloads/riswhois/riswhois6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
+    gunzip -f downloads/riswhois/riswhois6.gz
+    echo Refactor RISWhois
+    rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhois6 > data/pfx_asn_dfz_v6.csv
 fi
-
-echo Refactor RISWhois
-rg -e '(\d+)\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\d+)\t(\d+)' -N --replace '$2,$3,$1' downloads/riswhois/riswhoisdump-ipv4 > data/pfx_asn_dfz_v4.csv
-rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhoisdump-ipv6 > data/pfx_asn_dfz_v6.csv
 
 echo write timestamps
 echo { > data/riswhois.timestamps.json

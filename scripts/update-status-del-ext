@@ -45,7 +45,7 @@ if [ "$arg" != "--dry-run" ]; then
 	if [ "$changed" = true ]; then
 		echo -------------------
 			echo restarting roto-api daemon...
-			systemctl restart roto-api
+			systemctl --user restart roto-api
 		else
 			echo no updates, exiting...
 	fi

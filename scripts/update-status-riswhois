@@ -35,7 +35,7 @@ for riswhois in \
             scripts/download-riswhois "$1"
             if [ $1 = "riswhois6" ]; then
                 echo "restarting roto-api daemon..."
-                systemctl restart roto-api
+                systemctl --user restart roto-api
             else
                 echo no new ipv6 files, exiting...
             fi
