@@ -29,7 +29,7 @@ if [ "$1" = "riswhois4" ] || [ "$1" = "--all" ]; then
     curl -RsD downloads/riswhois4_h.txt -o downloads/riswhois/riswhois4.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
     gunzip -f downloads/riswhois/riswhois4.gz
     echo Refactor RISWhois
-    rg -e '(\d+)\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\d+)\t(\d+)' -N --replace '$2,$3,$1' downloads/riswhois/riswhois4 > data/pfx_asn_dfz_v4.csv
+    /home/roto/.cargo/bin/rg -e '(\d+)\t(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\d+)\t(\d+)' -N --replace '$2,$3,$1' downloads/riswhois/riswhois4 > data/pfx_asn_dfz_v4.csv
 fi
 
 if [ "$1" = "riswhois6" ] || [ "$1" = "--all" ]; then
@@ -37,17 +37,17 @@ if [ "$1" = "riswhois6" ] || [ "$1" = "--all" ]; then
     curl -RsD downloads/riswhois6_h.txt -o downloads/riswhois/riswhois6.gz https://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
     gunzip -f downloads/riswhois/riswhois6.gz
     echo Refactor RISWhois
-    rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhois6 > data/pfx_asn_dfz_v6.csv
+    /home/roto/.cargo/bin/rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhois6 > data/pfx_asn_dfz_v6.csv
 fi
 
 echo write timestamps
 echo { > data/riswhois.timestamps.json
 echo \"ipv4\": { >> data/riswhois.timestamps.json
 echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv4`, >> data/riswhois.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/riswhois4_h.txt | rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
+echo -e '\t"last_modified_header": "'`cat downloads/riswhois4_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
 echo -e '},' >> data/riswhois.timestamps.json
 echo \"ipv6\": { >> data/riswhois.timestamps.json
 echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv6`, >> data/riswhois.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/riswhois6_h.txt | rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
+echo -e '\t"last_modified_header": "'`cat downloads/riswhois6_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
 echo } >> data/riswhois.timestamps.json
 echo } >> data/riswhois.timestamps.json
