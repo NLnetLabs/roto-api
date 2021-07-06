@@ -11,7 +11,7 @@ if [ "$arg" != "" ] && [ "$arg" != "--dry-run" ] && [ "$arg" != "--force-sync" ]
 fi
 
 if [ "$ROTO_API_PEER" = "" ] && [ "$arg" != "--dry-run" ]; then
-  echo "Error: Set envvar ROTO_API_PEER to sync to peer"
+  echo `date --iso-8601="seconds"` roto-api Error: Set envvar ROTO_API_PEER to sync to peer
   exit 1
 fi
 
@@ -26,38 +26,30 @@ for riswhois in \
 	riswhois6,www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz \
 ;do IFS=","
 	set -- $riswhois
-	echo ----------------------------------
-	echo "$1" | tr [a-z] [A-Z]
 	cur_ts=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	echo local download time: $cur_ts
-
 	next_ts=`curl -s --HEAD $2 | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	echo remote download time: $next_ts
 
-	if [ "$cur_ts" = "$next_ts" ]; then
-            echo UNCHANGED
-	else
-	    echo CHANGED
+	if [ "$cur_ts" != "$next_ts" ]; then
+	    echo `date --iso-8601="seconds"` roto-api riswhois "$1" remote file changed.
 	    "$changed" = true
 	    if [ "$arg" != "--dry-run" ]; then
-	       echo downloading $2
+	       echo `date --iso-8601="seconds"` roto-api downloading $2
 	       scripts/download-riswhois "$1"
 	       if [ $1 = "riswhois6" ]; then
-	            echo "restarting roto-api daemon..."
+	            echo `date --iso-8601="seconds"` roto-api riswhois restarting local roto-api.
 		    XDG_RUNTIME_DIR="/run/user/1000" \
                     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus" \
 		    systemctl --user restart roto-api
-	       else
-	            echo no new ipv6 files, exiting...
 	       fi
             fi
 	fi
 done
 
-if [ "$changed" = true ] || [ "$arg" == "--force-sync" ]; then
-    echo sending this to peer...
+if [ "$changed" = true ] || [ "$arg" = "--force-sync" ]; then
+    echo `date --iso-8601="seconds"` roto-api riswhois syncing with peer.
     rsync -Cavz --delete data/ "$ROTO_API_PEER":/home/roto/ris_alloc_api/data/
+    echo `date --iso-8601="seconds"` roto-api riswhois restarting peer.
     ssh roto@"$ROTO_API_PEER" "systemctl --user restart roto-api"
 else
-    echo nothing changed, skipping writing to "$ROTO_API_PEER".
+    echo `date --iso-8601="seconds"` roto-api riswhois nothing changed, skipping syncing with peer
 fi

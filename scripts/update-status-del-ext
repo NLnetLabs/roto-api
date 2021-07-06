@@ -11,7 +11,7 @@ if [ "$1" != "" ] && [ "$1" != "--dry-run" ] && [ "$arg" != "--force-sync" ]; th
 fi
 
 if [ "$ROTO_API_PEER" = "" ] && [ "$arg" != "--dry-run" ]; then
-  echo "Error: Set envvar ROTO_API_PEER to sync to peer" 
+  echo `date --iso-8601='seconds'` roto-api delegated-extended Error: Set envvar ROTO_API_PEER to sync to peer
   exit 1
 fi
 
@@ -29,47 +29,48 @@ for rir in afrinic,https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-e
 	ripencc,https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest, \
 ;do IFS=","
 	set -- $rir
-	echo ----------------------------------
-	echo "$1" | tr [a-z] [A-Z]
-	cur_ts=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	echo local download time: $cur_ts
 
-	next_ts=`curl -s --HEAD $2 | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	echo remote download time: $next_ts
+	cur_ts=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
+	cur_etag=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^ETag: "(.+)"' --replace '$1'`
+
+	next_head=`curl -s --HEAD $2`
+	next_ts=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
+	next_etag=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^ETag: "(.+)"' --replace '$1'`
 
 	# "not equal" isn't enough: Arin moves Last-Modified header backwards.
-	if [ `date --date="$cur_ts" "+%s"` -ge `date --date="$next_ts" "+%s"` ]; then
-		echo UNCHANGED
-	else
-		echo CHANGED
+	# Yes, we could also use the ETag header, but that also changes when Arin
+	# moves the Last-Modified backwards. By using the 'Last-Modified' header
+	# as a discriminator for change we can avoid downloading the Arin file
+	# twice.
+	if [ `date --date="$cur_ts" "+%s"` -lt `date --date="$next_ts" "+%s"` ]; then
 		changed=true
+		echo `date --iso-8601='seconds'` roto-api $1 delegated-extended file changed \(`date --date="$next_ts" --iso-8601="seconds"`\)
 		if [ "$arg" != "--dry-run" ]; then
-			echo downloading $2
+			echo `date --iso-8601='seconds'` roto-api delegated-extended downloading $2
 			scripts/download-del-ext "$1"
 		fi
 	fi
 done
 
-if [ "$arg" != "--dry-run" ]; then
-	if [ "$changed" = true ]; then
-		echo -------------------
-			echo restarting roto-api daemon...
-			XDG_RUNTIME_DIR="/run/user/1000" \
-			DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus" \
-			systemctl --user restart roto-api
-		else
-			echo no updates, exiting...
-	fi
-else
+if [ "$arg" = "--dry-run" ]; then
 	echo changed="$changed"
 	echo this was a dry-run, no files were changed
 	exit 0
+else
+	if [ "$changed" = true ]; then
+	    echo `date --iso-8601='seconds'` roto-api delegated-extended restarting local roto-api daemon
+	    XDG_RUNTIME_DIR="/run/user/1000" \
+	    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus" \
+            systemctl --user restart roto-api
+	fi
 fi
 
 if [ "$changed" = true ] || [ "$arg" == "--force-sync" ]; then
-    echo sending this to peer...
+    echo `date --iso-8601='seconds'` roto-api delegated-extended syncing data files with peer
     rsync -Cavz --delete data/ "$ROTO_API_PEER":/home/roto/ris_alloc_api/data/
+    echo `date --iso-8601='seconds'` roto-api delegated-extended restarting peer
     ssh roto@"$ROTO_API_PEER" "systemctl --user restart roto-api"
 else
-    echo nothing changed, skipping writing to "$ROTO_API_PEER"
+    echo `date --iso-8601='seconds'` roto-api delegated-extended nothing changed, skipping syncing
 fi
+

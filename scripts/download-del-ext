@@ -24,38 +24,37 @@ if [ ! -d data ];then
 fi
 
 if [ "$1" = "afrinic" ] || [  "$1" = "--all" ]; then
-  echo download delegated-afrinic-extended-latest
+  echo `date --iso-8601="seconds"` roto-api download delegated-afrinic-extended-latest
   curl -RsD downloads/afrinic_h.txt -o downloads/del_ext/delegated-afrinic-extended-latest.txt https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest
 fi
 
 if [ "$1" = "apnic" ] || [ "$1" = "--all" ]; then
-echo download delegated-apnic-extended-latest
-curl -RsD downloads/apnic_h.txt -o downloads/del_ext/delegated-apnic-extended-latest.txt https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest
+  echo `date --iso-8601="seconds"` roto-api download delegated-apnic-extended-latest
+  curl -RsD downloads/apnic_h.txt -o downloads/del_ext/delegated-apnic-extended-latest.txt https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest
 fi
 
 if [ "$1" = "arin" ] || [ "$1" = "--all" ]; then
-echo download delegated-arin-extended-latest
-curl -RsD downloads/arin_h.txt -o downloads/del_ext/delegated-arin-extended-latest.txt https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
+  echo `date --iso-8601="seconds"` roto-api download delegated-arin-extended-latest
+  curl -RsD downloads/arin_h.txt -o downloads/del_ext/delegated-arin-extended-latest.txt https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
 fi
 
 if [ "$1" = "lacnic" ] || [ "$1" = "--all" ]; then
-echo download delegated-lacnic-extended-latest
-curl -RsD downloads/lacnic_h.txt -o downloads/del_ext/delegated-lacnic-extended-latest.txt https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
+  echo `date --iso-8601="seconds"` roto-api download delegated-lacnic-extended-latest
+  curl -RsD downloads/lacnic_h.txt -o downloads/del_ext/delegated-lacnic-extended-latest.txt https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest
 fi
 
 if [ "$1" = "ripencc" ] || [ "$1" = "--all" ]; then
-echo download delegated-ripencc-extended-latest
-curl -RsD downloads/ripencc_h.txt -o downloads/del_ext/delegated-ripencc-extended-latest.txt https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
+  echo `date --iso-8601="seconds"` roto-api download delegated-ripencc-extended-latest
+  curl -RsD downloads/ripencc_h.txt -o downloads/del_ext/delegated-ripencc-extended-latest.txt https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest
 fi
 
-echo concatenate all
+echo `date --iso-8601="seconds"` roto-api concatenate all delegated-extended files
 cat downloads/del_ext/delegated-afrinic-extended-latest.txt > data/delegated_all.csv && \
 cat downloads/del_ext/delegated-apnic-extended-latest.txt >> data/delegated_all.csv && \
 cat downloads/del_ext/delegated-arin-extended-latest.txt >> data/delegated_all.csv && \
 cat downloads/del_ext/delegated-lacnic-extended-latest.txt >> data/delegated_all.csv && \
 cat downloads/del_ext/delegated-ripencc-extended-latest.txt >> data/delegated_all.csv
 
-echo write timestamps
 echo { > data/del_ext.timestamps.json
 echo \"afrinic\": { >> data/del_ext.timestamps.json
 echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-afrinic-extended-latest.txt`, >> data/del_ext.timestamps.json
@@ -78,3 +77,4 @@ echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-ripencc-ex
 echo -e '\t"last_modified_header": "'`cat downloads/ripencc_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
 echo -e '}' >> data/del_ext.timestamps.json
 echo } >> data/del_ext.timestamps.json
+
