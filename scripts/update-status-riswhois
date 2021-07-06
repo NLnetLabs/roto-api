@@ -31,7 +31,7 @@ for riswhois in \
 
 	if [ "$cur_ts" != "$next_ts" ]; then
 	    echo `date --iso-8601="seconds"` roto-api riswhois "$1" remote file changed.
-	    "$changed" = true
+	    changed=true
 	    if [ "$arg" != "--dry-run" ]; then
 	       echo `date --iso-8601="seconds"` roto-api downloading $2
 	       scripts/download-riswhois "$1"
