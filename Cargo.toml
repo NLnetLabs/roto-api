@@ -18,6 +18,6 @@ ansi_term = "^0.12"
 chrono = "0.4.19"
 csv = "^1.1"
 hyper = { version = "0.14.9", features = [ "full" ] }
-rotonda-store = { git = "ssh://git@github.com/NLnetLabs/rotonda-store.git", branch = "feature-dynamodb" }
+rotonda-store = "0.1"
 rustyline = "8.0.0"
 tokio = { version = "1.7.1", features = [ "macros", "rt-multi-thread", "sync" ] }

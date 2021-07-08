@@ -597,7 +597,8 @@ dependencies = [
 [[package]]
 name = "rotonda-store"
 version = "0.1.0"
-source = "git+ssh://git@github.com/NLnetLabs/rotonda-store.git?branch=feature-dynamodb#d618e8336ea2a14206acddd2b3504d0b609d9517"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9272de1fed4d6550fe33fa6f54847e3adf00cbb168d062cf3ac8a8b4832f0c1d"
 dependencies = [
  "ansi_term",
  "base64",
