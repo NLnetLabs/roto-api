@@ -27,7 +27,6 @@ fn process_tasks(
                 None
             }
         });
-        // let less_spec_and_exact_match_results = cc.iter().filter(|(p, _r)| p.len != prefix.len);
         println!("exact match {:?}", exact_match);
 
         let res = JsonBuilder::build(|builder| {
@@ -43,8 +42,11 @@ fn process_tasks(
                                 match &ext_rec.0 {
                                     Some(rir_del_ext_r) => {
                                         builder.array_object(|builder| {
-                                            builder.member_str("source", "rir_alloc");
-                                            builder.member_str("rir", rir_del_ext_r.rir);
+                                            builder.member_str("sourceType", "rir-alloc");
+                                            builder.member_str(
+                                                "sourceID",
+                                                rir_del_ext_r.rir.to_json_id(),
+                                            );
                                         });
                                     }
                                     None => {}
@@ -53,8 +55,9 @@ fn process_tasks(
                                 match &ext_rec.1 {
                                     Some(ris_whois_r) => {
                                         builder.array_object(|builder| {
-                                            builder.member_str("source", "bgp");
-                                            builder.member_array("origin_asns", |builder| {
+                                            builder.member_str("sourceType", "bgp");
+                                            builder.member_str("sourceID", "riswhois");
+                                            builder.member_array("originASNs", |builder| {
                                                 for asn in ris_whois_r.origin_asns.0.iter() {
                                                     builder.array_str(asn)
                                                 }
@@ -97,8 +100,11 @@ fn process_tasks(
                                     match &ext_rec.0 {
                                         Some(rir_del_ext_r) => {
                                             builder.array_object(|builder| {
-                                                builder.member_str("source", "rir_alloc");
-                                                builder.member_str("rir", rir_del_ext_r.rir);
+                                                builder.member_str("sourceType", "rir-alloc");
+                                                builder.member_str(
+                                                    "sourceID",
+                                                    rir_del_ext_r.rir.to_json_id(),
+                                                );
                                             });
                                         }
                                         None => {}
@@ -106,8 +112,9 @@ fn process_tasks(
                                     match &ext_rec.1 {
                                         Some(ris_whois_r) => {
                                             builder.array_object(|builder| {
-                                                builder.member_str("source", "bgp");
-                                                builder.member_array("origin_asns", |builder| {
+                                                builder.member_str("sourceType", "bgp");
+                                                builder.member_str("sourceID", "riswhois");
+                                                builder.member_array("originASNs", |builder| {
                                                     for asn in ris_whois_r.origin_asns.0.iter() {
                                                         builder.array_str(asn)
                                                     }
@@ -129,8 +136,11 @@ fn process_tasks(
                                     match &ext_rec.0 {
                                         Some(rir_del_ext_r) => {
                                             builder.array_object(|builder| {
-                                                builder.member_str("source", "rir_alloc");
-                                                builder.member_str("rir", rir_del_ext_r.rir);
+                                                builder.member_str("sourceType", "rir-alloc");
+                                                builder.member_str(
+                                                    "sourceID",
+                                                    rir_del_ext_r.rir.to_json_id(),
+                                                );
                                             });
                                         }
                                         None => {}
@@ -138,8 +148,9 @@ fn process_tasks(
                                     match &ext_rec.1 {
                                         Some(ris_whois_r) => {
                                             builder.array_object(|builder| {
-                                                builder.member_str("source", "bgp");
-                                                builder.member_array("origin_asns", |builder| {
+                                                builder.member_str("sourceType", "bgp");
+                                                builder.member_str("sourceID", "riswhois");
+                                                builder.member_array("originASNs", |builder| {
                                                     for asn in ris_whois_r.origin_asns.0.iter() {
                                                         builder.array_str(asn)
                                                     }
