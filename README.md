@@ -1,8 +1,8 @@
 # BGP+RPKI+ALLOC API
 
-This is an HTTP/JSON API that gets data from RPKI ROAs, BGP announcements (through the RIPE Routing Information Collectors system) and the Delegated Extended Statistics files from the five RIRs.
+This is an HTTP/JSON API that gets data from BGP announcements (through the RIPE Routing Information Collectors system) and the Delegated Extended Statistics files from the five RIRs.
 
-It can be queried on prefix(es) and Autonomous System Numbers (ASN).
+It can be queried on prefix(es) for now.
 ## Resources
 
 | Name     | Type          |      |
