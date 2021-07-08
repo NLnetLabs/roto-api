@@ -1,6 +1,6 @@
 use std::{env, process};
 use std::str::FromStr;
-use rir_lir::{Addr, Prefix, Store};
+use roto_api::{Addr, Prefix, Store};
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
 
