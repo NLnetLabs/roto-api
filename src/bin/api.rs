@@ -226,7 +226,49 @@ async fn process_request(
     // return a pong with version info
     let resource = url.next();
     if resource.is_none() || resource == Some(&"") {
-        return Ok(api_info())
+        let uri = req.uri();
+        let host = if let Some(h) = req.headers().get("Host") {
+            h.to_str().unwrap()
+        } else {
+            ""
+        };
+        return Ok(ok_cors_response(JsonBuilder::build(|builder| {
+            builder.member_str("version", format!("roto-api/{}", version()));
+            builder.member_array("resources", |builder| {
+                builder.array_object(|builder| {
+                    builder.member_str("id", "prefix");
+                    builder
+                        .member_str("description", "Prefix with enriched data from data sources");
+                    builder.member_str(
+                        "syntax",
+                        "/api/v1/prefix/<IP_ADDRESS>/<PREFIX_LENGTH>/search[?include[relations]=[bgp|rir-alloc]]",
+                    );
+                    builder.member_str("uri", format!("https://{}{}prefix/", host, uri));
+                });
+                builder.array_object(|builder| {
+                    builder.member_str("id", "sources");
+                    builder.member_str("description", "List of properties of data sources");
+                    builder.member_raw("syntax", "null");
+                    builder.member_str("uri", format!("https://{}{}sources/", host, uri));
+                });
+                builder.array_object(|builder| {
+                    builder.member_str("id", "status");
+                    builder.member_str("description", "Status of this API");
+                    builder.member_raw("syntax", "null");
+                    builder.member_str("uri", format!("https://{}{}status", host, uri))
+                });
+            });
+        })));
+    }
+
+    if resource.as_ref() == Some(&"sources") {
+        return Ok(ok_cors_response(timestamps.to_jsonstring()));
+    }
+
+    if resource.as_ref() == Some(&"status") {
+        return Ok(ok_cors_response(JsonBuilder::build(|builder| {
+            builder.member_str("version", format!("roto-api/{}", version()));
+        })));
     }
 
     if resource.as_ref() != Some(&"prefix") {
@@ -312,7 +354,7 @@ fn internal_server_error() -> Response<Body> {
         .unwrap()
 }
 
-fn api_info() -> Response<Body> {
+fn ok_cors_response(body: String) -> Response<Body> {
     Response::builder()
         .status(StatusCode::OK)
         .header(hyper::header::CONTENT_TYPE, "application/json")
@@ -326,9 +368,7 @@ fn api_info() -> Response<Body> {
             "Content-Length,Content-Range",
         )
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-        .body(Body::from(
-            r#"{"api_name": "roto-api", "version": "0.10-dev"}"#,
-        ))
+        .body(Body::from(body))
         .unwrap()
 }
 
