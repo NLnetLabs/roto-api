@@ -172,6 +172,19 @@ impl<'a> From<&'a str> for Rir {
     }
 }
 
+impl Rir {
+    pub fn to_json_id(self) -> String {
+        match self {
+            Rir::Afrinic => "afrinic".to_string(),
+            Rir::Apnic => "apnic".to_string(),
+            Rir::Arin => "arin".to_string(),
+            Rir::Lacnic => "lacnic".to_string(),
+            Rir::RipeNcc => "ripe".to_string(),
+            Rir::Unknown => "riswhois".to_string(),
+        }
+    }
+}
+
 impl<'a> fmt::Display for Rir {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
