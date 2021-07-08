@@ -357,7 +357,7 @@ impl TimeStamps {
                             if let Rir::Unknown = r.0 {
                                 builder.member_str("type", "bgp");
                             } else {
-                                builder.member_str("type", "rir_alloc");
+                                builder.member_str("type", "rir-alloc");
                             }
                             builder.member_str("id", r.0.to_json_id());
                             builder.member_raw("serial", r.1);
