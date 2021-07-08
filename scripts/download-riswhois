@@ -38,14 +38,10 @@ if [ "$1" = "riswhois6" ] || [ "$1" = "--all" ]; then
     /home/roto/.cargo/bin/rg -e '(\d+)\t([0-9abcdef:]+)/(\d{1,3})\t(\d+)$' -N --replace '$2,$3,$1' downloads/riswhois/riswhois6 > data/pfx_asn_dfz_v6.csv
 fi
 
-echo { > data/riswhois.timestamps.json
-echo \"ipv4\": { >> data/riswhois.timestamps.json
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv4`, >> data/riswhois.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/riswhois4_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
-echo -e '},' >> data/riswhois.timestamps.json
-echo \"ipv6\": { >> data/riswhois.timestamps.json
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/riswhois/riswhoisdump-ipv6`, >> data/riswhois.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/riswhois6_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/riswhois.timestamps.json
-echo } >> data/riswhois.timestamps.json
-echo } >> data/riswhois.timestamps.json
-
+echo "address_family,file_timestamp,last_modified_header" > data/riswhois.timestamps.json
+for af in 4 6
+do
+  echo -e "ipv$af,\c" >> data/riswhois.timestamps.json
+  echo -e "`stat -c %Y downloads/riswhois/riswhoisdump-ipv"$af"`,\c" >> data/riswhois.timestamps.json
+  echo -e "\"`cat downloads/riswhois"$af"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/riswhois.timestamps.json
+done

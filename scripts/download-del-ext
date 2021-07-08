@@ -55,26 +55,10 @@ cat downloads/del_ext/delegated-arin-extended-latest.txt >> data/delegated_all.c
 cat downloads/del_ext/delegated-lacnic-extended-latest.txt >> data/delegated_all.csv && \
 cat downloads/del_ext/delegated-ripencc-extended-latest.txt >> data/delegated_all.csv
 
-echo { > data/del_ext.timestamps.json
-echo \"afrinic\": { >> data/del_ext.timestamps.json
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-afrinic-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/afrinic_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
-echo -e '},' >> data/del_ext.timestamps.json
-echo \"apnic\": { >> data/del_ext.timestamps.json 
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-apnic-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/apnic_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
-echo -e '}.' >> data/del_ext.timestamps.json
-echo \"arin\": { >> data/del_ext.timestamps.json 
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-arin-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/arin_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
-echo -e '},' >> data/del_ext.timestamps.json
-echo \"lacnic\": { >> data/del_ext.timestamps.json 
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-lacnic-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/lacnic_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
-echo -e '},' >> data/del_ext.timestamps.json
-echo \"ripencc\": { >> data/del_ext.timestamps.json
-echo -e '\t"file_timestamp": '`stat -c %Y downloads/del_ext/delegated-ripencc-extended-latest.txt`, >> data/del_ext.timestamps.json
-echo -e '\t"last_modified_header": "'`cat downloads/ripencc_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`'"' >> data/del_ext.timestamps.json
-echo -e '}' >> data/del_ext.timestamps.json
-echo } >> data/del_ext.timestamps.json
-
+echo "rir,file_timestamp,last_modified_header" > data/del_ext.timestamps.json
+for rir in afrinic apnic arin lacnic ripencc
+do
+  echo -e "$rir,\c" >> data/del_ext.timestamps.json
+  echo -e "`stat -c %Y downloads/del_ext/delegated-"$rir"-extended-latest.txt`,\c" >> data/del_ext.timestamps.json
+  echo -e "\"`cat downloads/"$rir"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/del_ext.timestamps.json
+done
