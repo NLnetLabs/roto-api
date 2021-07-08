@@ -1,6 +1,7 @@
+use chrono::DateTime;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
-use rir_lir::{Addr, JsonBuilder, Prefix, Store};
+use rir_lir::{version::version, Addr, JsonBuilder, Prefix, Store, TimeStamp, TimeStamps};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -168,10 +169,36 @@ fn process_tasks(
     }
 }
 
+pub fn import_timestamps() -> Result<TimeStamps, Box<dyn std::error::Error>> {
+    const TIMESTAMPS_FILE_PREFIX: &str = ".timestamps.json";
+    let mut timestamps = TimeStamps::new();
+    for dataset in &["del_ext", "riswhois"] {
+        let f_name = format!("./data/{}{}", dataset, TIMESTAMPS_FILE_PREFIX);
+        let ts_file = std::fs::File::open(f_name)?;
+        let mut rdr = csv::ReaderBuilder::new()
+            .delimiter(b',')
+            .flexible(true)
+            .trim(csv::Trim::Headers)
+            .from_reader(ts_file);
+
+        for record in rdr.records() {
+            let record = record?;
+
+            timestamps.push(TimeStamp(
+                record[0].into(),
+                record[1].parse::<u64>().unwrap(),
+                DateTime::parse_from_rfc2822(&record[2]).unwrap(),
+            ))?;
+        }
+    }
+    Ok(timestamps)
+}
+
 //------------ process_request -----------------------------------------------
 
 async fn process_request(
     req: Request<Body>,
+    timestamps: TimeStamps,
     tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) -> Result<Response<Body>, Infallible> {
     let mut url = req.uri().path().split("/");
@@ -351,6 +378,11 @@ async fn main() {
     }
 
     let (tx, rx) = mpsc::channel(10);
+    let ts = import_timestamps().expect(&format!(
+        "{} roto-api Can't handle download timestamps. Exiting",
+        chrono::Utc::now().to_rfc3339()
+    ));
+    println!("{:#?}", ts);
 
     thread::spawn(move || {
         process_tasks(store, rx);
@@ -362,7 +394,7 @@ async fn main() {
             // service_fn converts our function into a `Service`
             Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
                 let tx = tx.clone();
-                process_request(req, tx)
+                process_request(req, ts.clone(), tx)
             }))
         }
     });

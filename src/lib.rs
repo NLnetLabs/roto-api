@@ -1,3 +1,5 @@
+pub mod version;
+
 use ansi_term::Colour;
 use chrono::{DateTime, Utc};
 use num::PrimInt;
@@ -273,12 +275,108 @@ impl Asn {
     }
 }
 
+// ----------- TimeStamp & TimeStamps ------------------------------------------------
+
+#[derive(Copy, Clone, Debug)]
+pub struct TimeStamp(pub Rir, pub u64, pub chrono::DateTime<chrono::FixedOffset>);
+
+impl fmt::Display for TimeStamp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "\"{}\": \"{} {}\"", self.0, self.1, self.2)
+    }
+}
+
+impl TimeStamp {
+    pub fn to_string(self) -> String {
+        format!("{} {} {}", self.0, self.1, self.2)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct TimeStamps {
+    pub afrinic: Option<TimeStamp>,
+    pub apnic: Option<TimeStamp>,
+    pub arin: Option<TimeStamp>,
+    pub lacnic: Option<TimeStamp>,
+    pub ripencc: Option<TimeStamp>,
+    pub riswhois: Option<TimeStamp>,
+}
+
+impl TimeStamps {
+    pub fn new() -> Self {
+        TimeStamps {
+            afrinic: None,
+            apnic: None,
+            arin: None,
+            lacnic: None,
+            ripencc: None,
+            riswhois: None,
+        }
+    }
+
+    pub fn push(&mut self, ts: TimeStamp) -> Result<(), Box<dyn std::error::Error>> {
+        match ts.0 {
+            Rir::Afrinic => {
+                self.afrinic = Some(ts);
+            }
+            Rir::Apnic => {
+                self.apnic = Some(ts);
+            }
+            Rir::Arin => {
+                self.arin = Some(ts);
+            }
+            Rir::Lacnic => {
+                self.lacnic = Some(ts);
+            }
+            Rir::RipeNcc => {
+                self.ripencc = Some(ts);
+            }
+            Rir::Unknown => {
+                self.riswhois = Some(ts);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn to_jsonstring(self) -> String {
+        JsonBuilder::build(|builder| {
+            builder.member_array("sources", |builder| {
+                for rir in [
+                    self.afrinic,
+                    self.apnic,
+                    self.arin,
+                    self.lacnic,
+                    self.ripencc,
+                    self.riswhois,
+                ]
+                .iter()
+                {
+                    if let Some(r) = rir {
+                        builder.array_object(|builder| {
+                            // RisWhois dataset has Rir::Unknown set
+                            if let Rir::Unknown = r.0 {
+                                builder.member_str("type", "bgp");
+                            } else {
+                                builder.member_str("type", "rir_alloc");
+                            }
+                            builder.member_str("id", r.0.to_json_id());
+                            builder.member_raw("serial", r.1);
+                            builder.member_str("lastUpdated", r.2.format("%+"));
+                        })
+                    }
+                }
+            })
+        })
+    }
+}
+
 //------------ Store ---------------------------------------------------------
 
 pub struct Store {
     v4: TreeBitMap<InMemStorage<u32, ExtPrefixRecord>>,
     v6: TreeBitMap<InMemStorage<u128, ExtPrefixRecord>>,
     updated: DateTime<Utc>,
+    pub timestamps: TimeStamps,
 }
 
 impl Store {
@@ -287,6 +385,7 @@ impl Store {
             v4: TreeBitMap::new(vec![4]),
             v6: TreeBitMap::new(vec![4]),
             updated: Utc::now(),
+            timestamps: TimeStamps::new(),
         }
     }
 
