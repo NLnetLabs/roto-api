@@ -98,7 +98,7 @@ fn process_tasks(
                 None => None,
             }) {
                 println!("lmp rec {:?}", lmp_rel_rec);
-                let rel_rec = store.get_related_prefixes(&lmp_rel_rec);
+                let rel_rec = store.get_related_prefixes(lmp_rel_rec);
                 builder.member_array("relations", |builder| {
                     for (pfx, value) in rel_rec.iter() {
                         builder.array_object(|builder| {
@@ -221,7 +221,7 @@ async fn process_request(
     timestamps: TimeStamps,
     tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) -> Result<Response<Body>, Infallible> {
-    let mut url = req.uri().path().split("/");
+    let mut url = req.uri().path().split('/');
     println!("{:?}", req.uri().path());
 
     let _slash = url.next();
@@ -245,7 +245,7 @@ async fn process_request(
     // If a call to /[api]/v1 is made with any further stuff, we'll
     // return a pong with version info
     let resource = url.next();
-    if resource.is_none() || resource == Some(&"") {
+    if resource.is_none() || resource == Some("") {
         let uri = req.uri();
         let host = if let Some(h) = req.headers().get("Host") {
             h.to_str().unwrap()

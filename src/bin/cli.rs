@@ -1,8 +1,8 @@
-use std::{env, process};
-use std::str::FromStr;
 use roto_api::{Addr, Prefix, Store};
-use rustyline::Editor;
 use rustyline::error::ReadlineError;
+use rustyline::Editor;
+use std::str::FromStr;
+use std::{env, process};
 
 fn main() {
     let mut args = env::args();
@@ -16,28 +16,19 @@ fn main() {
     let prefix_path = match args.next() {
         Some(path) => path,
         None => {
-            eprintln!(
-                "Usage: {} <prefixes-file> <ris-file> [<ris-file> ...]",
-                cmd
-            );
+            eprintln!("Usage: {} <prefixes-file> <ris-file> [<ris-file> ...]", cmd);
             process::exit(1);
         }
     };
 
     let mut store = Store::new();
     if let Err(err) = store.load_prefixes(prefix_path.as_ref()) {
-        eprintln!(
-            "Failed to load {}: {}",
-            prefix_path, err
-        );
+        eprintln!("Failed to load {}: {}", prefix_path, err);
         process::exit(1);
     }
     for path in args {
         if let Err(err) = store.load_riswhois(path.as_ref()) {
-            eprintln!(
-                "Failed to load {}: {}",
-                path, err
-            );
+            eprintln!("Failed to load {}: {}", path, err);
             process::exit(1);
         }
     }
@@ -68,10 +59,7 @@ fn main() {
                 let ip = match Addr::from_str(s_pref[0]) {
                     Ok(ip) => ip,
                     Err(err) => {
-                        eprintln!(
-                            "Error: Can't parse address part. {:?}: {}",
-                            s_pref[0], err
-                        );
+                        eprintln!("Error: Can't parse address part. {:?}: {}", s_pref[0], err);
                         continue;
                     }
                 };
@@ -108,8 +96,7 @@ fn main() {
                         key_pfx.0.addr, key_pfx.0.len
                     );
                     println!("{:#?}", related_pfxs);
-                }
-                else {
+                } else {
                     println!("No related prefixes found.");
                 }
             }

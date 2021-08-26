@@ -97,6 +97,20 @@ pub struct QueryResult<'a> {
     pub more_specifics: RecordSet<'a>,
 }
 
+// impl<'a, AF: AddressFamily> From<rotonda_store::QueryResult<'a, InMemStorage<AF, ExtPrefixRecord>>>
+//     for QueryResult<'a, AF>
+// where
+//     RecordSet<'a>: From<Option<Vec<&'a RotondaPrefix<AF, ExtPrefixRecord>>>>,
+// {
+//     fn from(result: RotondaQueryResult<'a, InMemStorage<AF, ExtPrefixRecord>>) -> Self {
+//         Self {
+//             prefix: result.prefix,
+//             less_specifics: RecordSet::from(result.less_specifics),
+//             more_specifics: RecordSet::from(result.more_specifics),
+//         }
+//     }
+// }
+
 impl<'a> Into<QueryResult<'a>>
     for rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
 {
@@ -241,6 +255,10 @@ impl<'a> From<Option<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>>> for RecordS
 pub struct RecordSet<'a> {
     v4: Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>,
     v6: Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>,
+    // v4: QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>,
+    // v6: QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>,
+    // v4: RecordSet4<'a>,
+    // v6: RecordSet6<'a>,
 }
 
 impl<'a> RecordSet<'a> {
@@ -381,7 +399,7 @@ pub struct ExtPrefixRecord(pub Option<RirDelExtRecord>, pub Option<RisWhoisRecor
 
 impl MergeUpdate for ExtPrefixRecord {
     fn merge_update(
-        self: &mut Self,
+        &mut self,
         update_record: ExtPrefixRecord,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if update_record.0.is_some() {
@@ -445,7 +463,7 @@ impl fmt::Display for Asn {
 
 impl Asn {
     fn from_str(as_str: &str) -> Result<Asn, std::num::ParseIntError> {
-        as_str.parse::<u32>().map(|asn| Asn(asn))
+        as_str.parse::<u32>().map(Asn)
     }
 }
 
@@ -460,6 +478,7 @@ impl fmt::Display for TimeStamp {
     }
 }
 
+#[allow(clippy::inherent_to_string_shadow_display)]
 impl TimeStamp {
     pub fn to_string(self) -> String {
         format!("{} {} {}", self.0, self.1, self.2)
@@ -627,7 +646,7 @@ impl Store {
         for record in rdr.records() {
             let record = record?;
 
-            if record[0].starts_with("#")
+            if record[0].starts_with('#')
                 || &record[5] == "summary"
                 || &record[6] == "reserved"
                 || &record[6] == "available"
@@ -677,6 +696,39 @@ impl Store {
         self.updated = Utc::now();
         Ok(())
     }
+
+    // pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult<AF> {
+    //     match prefix.addr {
+    //         Addr::V4(addr) => RecordSet {
+    //             v4: self
+    //                 .v4
+    //                 .match_prefix(
+    //                     &RotondaPrefix::new(addr, prefix.len),
+    //                     MatchOptions {
+    //                         match_type: MatchType::LongestMatch,
+    //                         include_less_specifics: true,
+    //                         include_more_specifics: true,
+    //                     },
+    //                 )
+    //                 .into(),
+    //             v6: Vec::new(),
+    //         },
+    //         Addr::V6(addr) => RecordSet {
+    //             v4: Vec::new(),
+    //             v6: self
+    //                 .v6
+    //                 .match_prefix(
+    //                     &RotondaPrefix::new(addr, prefix.len),
+    //                     MatchOptions {
+    //                         match_type: MatchType::LongestMatch,
+    //                         include_less_specifics: true,
+    //                         include_more_specifics: true,
+    //                     },
+    //                 )
+    //                 .into(),
+    //         },
+    //     }
+    // }
 
     pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult {
         match prefix.addr {
