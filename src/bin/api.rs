@@ -17,16 +17,25 @@ fn process_tasks(
     mut queue: mpsc::Receiver<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) {
     while let Some((prefix, tx)) = queue.blocking_recv() {
-        let recs = store.match_longest_prefix(prefix);
+        let recs = match prefix.addr {
+            Addr::V4(_addr) => {
+                store.match_longest_prefix::<u32>(prefix)
+            },
+            Addr::V6(_addr) => {
+                store.match_longest_prefix::<u128>(prefix)
+            }
+        };
         let cc = recs.clone();
 
-        let exact_match = cc.iter().last().and_then(|(p, r)| {
+        let exact_match = if let Some(p) = cc.prefix {
             if p.len == prefix.len {
-                Some((p, r))
+                Some((p, cc.prefix_meta))
             } else {
                 None
             }
-        });
+        } else {
+            None
+        };
         println!("exact match {:?}", exact_match);
 
         let res = JsonBuilder::build(|builder| {
@@ -84,7 +93,7 @@ fn process_tasks(
             // The vecs in a RecordSet are ordered from least to most specific,
             // hence the reverse. The resulting prefix is used to lookup all the
             // related prefixes.
-            if let Some(lmp_rel_rec) = recs.reverse().iter().find_map(|(_p, r)| match r {
+            if let Some(lmp_rel_rec) = recs.less_specifics.reverse().iter().find_map(|(_p, r)| match r {
                 Some(rec) => rec.0.as_ref(),
                 None => None,
             }) {
@@ -127,7 +136,7 @@ fn process_tasks(
                             })
                         });
                     }
-                    for (pfx, value) in cc.iter() {
+                    for (pfx, value) in cc.less_specifics.iter() {
                         builder.array_object(|builder| {
                             builder.member_str("prefix", pfx);
                             builder.member_str("type", "less-specific");

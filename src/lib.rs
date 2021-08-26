@@ -4,7 +4,10 @@ use ansi_term::Colour;
 use chrono::{DateTime, Utc};
 use num::PrimInt;
 use rotonda_store::common::{AddressFamily, MergeUpdate, Prefix as RotondaPrefix};
-use rotonda_store::{InMemNodeId, InMemStorage, SizedStrideNode, TreeBitMap};
+use rotonda_store::{
+    InMemNodeId, InMemStorage, MatchOptions, MatchType,
+    SizedStrideNode, TreeBitMap,
+};
 use std::error::Error;
 use std::fmt::Write;
 use std::fs::File;
@@ -39,6 +42,11 @@ impl From<IpAddr> for Addr {
             IpAddr::V4(addr) => addr.into(),
             IpAddr::V6(addr) => addr.into(),
         }
+    }
+}
+impl From<u32> for Addr {
+    fn from(addr: u32) -> Self {
+        addr.into()
     }
 }
 
@@ -82,6 +90,154 @@ impl fmt::Display for Prefix {
 //------------ RecordSet -----------------------------------------------------
 
 #[derive(Clone, Debug)]
+pub struct QueryResult<'a> {
+    pub prefix: Option<Prefix>,
+    pub prefix_meta: Option<&'a ExtPrefixRecord>,
+    pub less_specifics: RecordSet<'a>,
+    pub more_specifics: RecordSet<'a>,
+}
+
+impl<'a> Into<QueryResult<'a>>
+    for rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
+{
+    fn into(self) -> QueryResult<'a> {
+        match self.prefix {
+            Some(prefix) => match prefix.net.into_ipaddr() {
+                std::net::IpAddr::V4(net) => {
+                    return QueryResult {
+                        prefix: if let Some(pfx) = self.prefix {
+                            Some(Prefix {
+                                addr: Addr::from(net),
+                                len: pfx.len,
+                            })
+                        } else {
+                            None
+                        },
+                        prefix_meta: if let Some(pfx) = self.prefix {
+                            pfx.meta.as_ref()
+                        } else {
+                            None
+                        },
+                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                    }
+                }
+                std::net::IpAddr::V6(net) => {
+                    return QueryResult {
+                        prefix: if let Some(pfx) = self.prefix {
+                            Some(Prefix {
+                                addr: Addr::from(net),
+                                len: pfx.len,
+                            })
+                        } else {
+                            None
+                        },
+                        prefix_meta: if let Some(pfx) = self.prefix {
+                            pfx.meta.as_ref()
+                        } else {
+                            None
+                        },
+                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                    }
+                }
+            },
+            None => QueryResult {
+                prefix: None,
+                prefix_meta: None,
+                less_specifics: RecordSet {
+                    v4: vec![],
+                    v6: vec![],
+                },
+                more_specifics: RecordSet {
+                    v4: vec![],
+                    v6: vec![],
+                },
+            },
+        }
+    }
+}
+
+impl<'a> Into<QueryResult<'a>>
+    for rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>>
+{
+    fn into(self) -> QueryResult<'a> {
+        match self.prefix {
+            Some(prefix) => match prefix.net.into_ipaddr() {
+                std::net::IpAddr::V4(net) => {
+                    return QueryResult {
+                        prefix: if let Some(pfx) = self.prefix {
+                            Some(Prefix {
+                                addr: Addr::from(net),
+                                len: pfx.len,
+                            })
+                        } else {
+                            None
+                        },
+                        prefix_meta: if let Some(pfx) = self.prefix {
+                            pfx.meta.as_ref()
+                        } else {
+                            None
+                        },
+                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                    }
+                }
+                std::net::IpAddr::V6(net) => {
+                    return QueryResult {
+                        prefix: if let Some(pfx) = self.prefix {
+                            Some(Prefix {
+                                addr: Addr::from(net),
+                                len: pfx.len,
+                            })
+                        } else {
+                            None
+                        },
+                        prefix_meta: if let Some(pfx) = self.prefix {
+                            pfx.meta.as_ref()
+                        } else {
+                            None
+                        },
+                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                    }
+                }
+            },
+            None => QueryResult {
+                prefix: None,
+                prefix_meta: None,
+                less_specifics: RecordSet {
+                    v4: vec![],
+                    v6: vec![],
+                },
+                more_specifics: RecordSet {
+                    v4: vec![],
+                    v6: vec![],
+                },
+            },
+        }
+    }
+}
+
+impl<'a> From<Option<Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>>> for RecordSet<'a> {
+    fn from(result: Option<Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>>) -> Self {
+        RecordSet {
+            v4: result.unwrap(),
+            v6: Vec::new(),
+        }
+    }
+}
+
+impl<'a> From<Option<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>>> for RecordSet<'a> {
+    fn from(result: Option<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>>) -> Self {
+        RecordSet {
+            v6: result.unwrap(),
+            v4: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct RecordSet<'a> {
     v4: Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>,
     v6: Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>,
@@ -107,6 +263,24 @@ impl<'a> RecordSet<'a> {
         self.v4.reverse();
         self.v6.reverse();
         self
+    }
+}
+
+impl<'a> From<Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>> for RecordSet<'a> {
+    fn from(vec: Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>) -> Self {
+        Self {
+            v4: vec,
+            v6: vec![],
+        }
+    }
+}
+
+impl<'a> From<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>> for RecordSet<'a> {
+    fn from(vec: Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>) -> Self {
+        Self {
+            v4: vec![],
+            v6: vec,
+        }
     }
 }
 
@@ -504,20 +678,30 @@ impl Store {
         Ok(())
     }
 
-    pub fn match_longest_prefix(&self, prefix: Prefix) -> RecordSet {
+    pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult {
         match prefix.addr {
-            Addr::V4(addr) => RecordSet {
-                v4: self
-                    .v4
-                    .match_longest_prefix(&RotondaPrefix::new(addr, prefix.len)),
-                v6: Vec::new(),
-            },
-            Addr::V6(addr) => RecordSet {
-                v4: Vec::new(),
-                v6: self
-                    .v6
-                    .match_longest_prefix(&RotondaPrefix::new(addr, prefix.len)),
-            },
+            Addr::V4(addr) => self
+                .v4
+                .match_prefix(
+                    &RotondaPrefix::new(addr, prefix.len),
+                    MatchOptions {
+                        match_type: MatchType::LongestMatch,
+                        include_less_specifics: true,
+                        include_more_specifics: true,
+                    },
+                )
+                .into(),
+            Addr::V6(addr) => self
+                .v6
+                .match_prefix(
+                    &RotondaPrefix::new(addr, prefix.len),
+                    MatchOptions {
+                        match_type: MatchType::LongestMatch,
+                        include_less_specifics: true,
+                        include_more_specifics: true,
+                    },
+                )
+                .into(),
         }
     }
 
@@ -540,10 +724,10 @@ impl Store {
                     if let Some(rel_p_meta_rde) = rel_p_meta.0.as_ref() {
                         rel_p_meta_rde.group_id == meta.group_id
                     } else {
-                        return false;
+                        false
                     }
                 } else {
-                    return false;
+                    false
                 }
             })
             .collect()

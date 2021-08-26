@@ -79,7 +79,10 @@ fn main() {
                 rl.add_history_entry(line.as_str());
                 println!("Searching for prefix: {}/{}", ip, len);
 
-                let lmp_pfx = store.match_longest_prefix(Prefix::new(ip, len));
+                let lmp_pfx = match ip {
+                    Addr::V4(_addr) => store.match_longest_prefix::<u32>(Prefix::new(ip, len)),
+                    Addr::V6(_addr) => store.match_longest_prefix::<u128>(Prefix::new(ip, len)),
+                };
                 println!(
                     "Found less-specific and exactly matching prefixes: {:#?}",
                     lmp_pfx
@@ -88,13 +91,14 @@ fn main() {
                 // Find longest prefix.
                 let key_pfx = {
                     lmp_pfx
-                    .iter()
-                    .filter_map(|item| {
-                        item.1.and_then(|item| item.0.as_ref()).map(|some| {
-                            (item.0, some)
+                        .less_specifics
+                        .iter()
+                        .filter_map(|item| {
+                            item.1
+                                .and_then(|item| item.0.as_ref())
+                                .map(|some| (item.0, some))
                         })
-                    })
-                    .max_by_key(|item| item.0.len)
+                        .max_by_key(|item| item.0.len)
                 };
 
                 if let Some(key_pfx) = key_pfx {
