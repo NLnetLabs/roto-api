@@ -21,7 +21,7 @@ fn main() {
         }
     };
 
-    let mut store = Store::new();
+    let mut store: Store = Default::default();
     if let Err(err) = store.load_prefixes(prefix_path.as_ref()) {
         eprintln!("Failed to load {}: {}", prefix_path, err);
         process::exit(1);
@@ -44,7 +44,7 @@ fn main() {
         let readline = rl.readline("(rotonda-store)> ");
         match readline {
             Ok(line) => {
-                let s_pref: Vec<&str> = line.split("/").collect();
+                let s_pref: Vec<&str> = line.split('/').collect();
 
                 if s_pref.len() < 2 {
                     eprintln!(

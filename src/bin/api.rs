@@ -12,18 +12,17 @@ const CURRENT_API_VERSION: &str = "v1";
 
 //------------ process_tasks -------------------------------------------------
 
+// This Clippy lint is WRONG! It figures the `match` in exact_match is an actual
+// match statement.
+#[allow(clippy::collapsible_match)]
 fn process_tasks(
     store: Store,
     mut queue: mpsc::Receiver<(Prefix, oneshot::Sender<Response<Body>>)>,
 ) {
     while let Some((prefix, tx)) = queue.blocking_recv() {
         let recs = match prefix.addr {
-            Addr::V4(_addr) => {
-                store.match_longest_prefix::<u32>(prefix)
-            },
-            Addr::V6(_addr) => {
-                store.match_longest_prefix::<u128>(prefix)
-            }
+            Addr::V4(_addr) => store.match_longest_prefix::<u32>(prefix),
+            Addr::V6(_addr) => store.match_longest_prefix::<u128>(prefix),
         };
         let cc = recs.clone();
 
@@ -93,10 +92,15 @@ fn process_tasks(
             // The vecs in a RecordSet are ordered from least to most specific,
             // hence the reverse. The resulting prefix is used to lookup all the
             // related prefixes.
-            if let Some(lmp_rel_rec) = recs.less_specifics.reverse().iter().find_map(|(_p, r)| match r {
-                Some(rec) => rec.0.as_ref(),
-                None => None,
-            }) {
+            if let Some(lmp_rel_rec) =
+                recs.less_specifics
+                    .reverse()
+                    .iter()
+                    .find_map(|(_p, r)| match r {
+                        Some(rec) => rec.0.as_ref(),
+                        None => None,
+                    })
+            {
                 println!("lmp rec {:?}", lmp_rel_rec);
                 let rel_rec = store.get_related_prefixes(lmp_rel_rec);
                 builder.member_array("relations", |builder| {
@@ -191,7 +195,7 @@ fn process_tasks(
 
 pub fn import_timestamps() -> Result<TimeStamps, Box<dyn std::error::Error>> {
     const TIMESTAMPS_FILE_PREFIX: &str = ".timestamps.json";
-    let mut timestamps = TimeStamps::new();
+    let mut timestamps: TimeStamps = Default::default();
     for dataset in &["del_ext", "riswhois"] {
         let f_name = format!("./data/{}{}", dataset, TIMESTAMPS_FILE_PREFIX);
         let ts_file = std::fs::File::open(f_name)?;
@@ -351,7 +355,7 @@ fn not_found(description: Option<String>) -> Result<Response<Body>, Infallible> 
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::from(format!(
             "{{\"results\": null, \"error\": true, \"error_msg\": \"{}\"}}",
-            description.unwrap_or("cannot parse query".to_string())
+            description.unwrap_or_else(|| "cannot parse query".to_string())
         )))
         .unwrap())
 }
@@ -425,7 +429,7 @@ async fn main() {
         }
     };
 
-    let mut store = Store::new();
+    let mut store: Store = Default::default();
     if let Err(err) = store.load_prefixes(prefix_path.as_ref()) {
         eprintln!("Failed to load {}: {}", prefix_path, err);
         process::exit(1);
@@ -438,10 +442,12 @@ async fn main() {
     }
 
     let (tx, rx) = mpsc::channel(10);
-    let ts = import_timestamps().expect(&format!(
-        "{} roto-api Can't handle download timestamps. Exiting",
-        chrono::Utc::now().to_rfc3339()
-    ));
+    let ts = import_timestamps().unwrap_or_else(|_| {
+        panic!(
+            "{} roto-api Can't handle download timestamps. Exiting",
+            chrono::Utc::now().to_rfc3339()
+        )
+    });
     println!("{:#?}", ts);
 
     thread::spawn(move || {
@@ -454,7 +460,7 @@ async fn main() {
             // service_fn converts our function into a `Service`
             Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
                 let tx = tx.clone();
-                process_request(req, ts.clone(), tx)
+                process_request(req, ts, tx)
             }))
         }
     });

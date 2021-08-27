@@ -5,8 +5,7 @@ use chrono::{DateTime, Utc};
 use num::PrimInt;
 use rotonda_store::common::{AddressFamily, MergeUpdate, Prefix as RotondaPrefix};
 use rotonda_store::{
-    InMemNodeId, InMemStorage, MatchOptions, MatchType,
-    SizedStrideNode, TreeBitMap,
+    InMemNodeId, InMemStorage, MatchOptions, MatchType, SizedStrideNode, TreeBitMap,
 };
 use std::error::Error;
 use std::fmt::Write;
@@ -97,62 +96,42 @@ pub struct QueryResult<'a> {
     pub more_specifics: RecordSet<'a>,
 }
 
-// impl<'a, AF: AddressFamily> From<rotonda_store::QueryResult<'a, InMemStorage<AF, ExtPrefixRecord>>>
-//     for QueryResult<'a, AF>
-// where
-//     RecordSet<'a>: From<Option<Vec<&'a RotondaPrefix<AF, ExtPrefixRecord>>>>,
-// {
-//     fn from(result: RotondaQueryResult<'a, InMemStorage<AF, ExtPrefixRecord>>) -> Self {
-//         Self {
-//             prefix: result.prefix,
-//             less_specifics: RecordSet::from(result.less_specifics),
-//             more_specifics: RecordSet::from(result.more_specifics),
-//         }
-//     }
-// }
-
-impl<'a> Into<QueryResult<'a>>
-    for rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
+impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>>
+    for QueryResult<'a>
 {
-    fn into(self) -> QueryResult<'a> {
-        match self.prefix {
+    fn from(
+        result: rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>,
+    ) -> QueryResult<'a> {
+        match result.prefix {
             Some(prefix) => match prefix.net.into_ipaddr() {
                 std::net::IpAddr::V4(net) => {
                     return QueryResult {
-                        prefix: if let Some(pfx) = self.prefix {
-                            Some(Prefix {
-                                addr: Addr::from(net),
-                                len: pfx.len,
-                            })
-                        } else {
-                            None
-                        },
-                        prefix_meta: if let Some(pfx) = self.prefix {
+                        prefix: result.prefix.map(|pfx| Prefix {
+                            addr: Addr::from(net),
+                            len: pfx.len,
+                        }),
+                        prefix_meta: if let Some(pfx) = result.prefix {
                             pfx.meta.as_ref()
                         } else {
                             None
                         },
-                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
-                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                        less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(result.more_specifics.unwrap()),
                     }
                 }
                 std::net::IpAddr::V6(net) => {
                     return QueryResult {
-                        prefix: if let Some(pfx) = self.prefix {
-                            Some(Prefix {
-                                addr: Addr::from(net),
-                                len: pfx.len,
-                            })
-                        } else {
-                            None
-                        },
-                        prefix_meta: if let Some(pfx) = self.prefix {
+                        prefix: result.prefix.map(|pfx| Prefix {
+                            addr: Addr::from(net),
+                            len: pfx.len,
+                        }),
+                        prefix_meta: if let Some(pfx) = result.prefix {
                             pfx.meta.as_ref()
                         } else {
                             None
                         },
-                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
-                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                        less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(result.more_specifics.unwrap()),
                     }
                 }
             },
@@ -172,48 +151,42 @@ impl<'a> Into<QueryResult<'a>>
     }
 }
 
-impl<'a> Into<QueryResult<'a>>
-    for rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>>
+impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>>>
+    for QueryResult<'a>
 {
-    fn into(self) -> QueryResult<'a> {
-        match self.prefix {
+    fn from(
+        result: rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>>,
+    ) -> QueryResult<'a> {
+        match result.prefix {
             Some(prefix) => match prefix.net.into_ipaddr() {
                 std::net::IpAddr::V4(net) => {
                     return QueryResult {
-                        prefix: if let Some(pfx) = self.prefix {
-                            Some(Prefix {
-                                addr: Addr::from(net),
-                                len: pfx.len,
-                            })
-                        } else {
-                            None
-                        },
-                        prefix_meta: if let Some(pfx) = self.prefix {
+                        prefix: result.prefix.map(|pfx| Prefix {
+                            addr: Addr::from(net),
+                            len: pfx.len,
+                        }),
+                        prefix_meta: if let Some(pfx) = result.prefix {
                             pfx.meta.as_ref()
                         } else {
                             None
                         },
-                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
-                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                        less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(result.more_specifics.unwrap()),
                     }
                 }
                 std::net::IpAddr::V6(net) => {
                     return QueryResult {
-                        prefix: if let Some(pfx) = self.prefix {
-                            Some(Prefix {
-                                addr: Addr::from(net),
-                                len: pfx.len,
-                            })
-                        } else {
-                            None
-                        },
-                        prefix_meta: if let Some(pfx) = self.prefix {
+                        prefix: result.prefix.map(|pfx| Prefix {
+                            addr: Addr::from(net),
+                            len: pfx.len,
+                        }),
+                        prefix_meta: if let Some(pfx) = result.prefix {
                             pfx.meta.as_ref()
                         } else {
                             None
                         },
-                        less_specifics: RecordSet::from(self.less_specifics.unwrap()),
-                        more_specifics: RecordSet::from(self.more_specifics.unwrap()),
+                        less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                        more_specifics: RecordSet::from(result.more_specifics.unwrap()),
                     }
                 }
             },
@@ -255,10 +228,6 @@ impl<'a> From<Option<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>>> for RecordS
 pub struct RecordSet<'a> {
     v4: Vec<&'a RotondaPrefix<u32, ExtPrefixRecord>>,
     v6: Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>,
-    // v4: QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>,
-    // v6: QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>,
-    // v4: RecordSet4<'a>,
-    // v6: RecordSet6<'a>,
 }
 
 impl<'a> RecordSet<'a> {
@@ -485,7 +454,7 @@ impl TimeStamp {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct TimeStamps {
     pub afrinic: Option<TimeStamp>,
     pub apnic: Option<TimeStamp>,
@@ -496,17 +465,6 @@ pub struct TimeStamps {
 }
 
 impl TimeStamps {
-    pub fn new() -> Self {
-        TimeStamps {
-            afrinic: None,
-            apnic: None,
-            arin: None,
-            lacnic: None,
-            ripencc: None,
-            riswhois: None,
-        }
-    }
-
     pub fn push(&mut self, ts: TimeStamp) -> Result<(), Box<dyn std::error::Error>> {
         match ts.0 {
             Rir::Afrinic => {
@@ -543,20 +501,19 @@ impl TimeStamps {
                     self.riswhois,
                 ]
                 .iter()
+                .flatten()
                 {
-                    if let Some(r) = rir {
-                        builder.array_object(|builder| {
-                            // RisWhois dataset has Rir::Unknown set
-                            if let Rir::Unknown = r.0 {
-                                builder.member_str("type", "bgp");
-                            } else {
-                                builder.member_str("type", "rir-alloc");
-                            }
-                            builder.member_str("id", r.0.to_json_id());
-                            builder.member_raw("serial", r.1);
-                            builder.member_str("lastUpdated", r.2.format("%+"));
-                        })
-                    }
+                    builder.array_object(|builder| {
+                        // RisWhois dataset has Rir::Unknown set
+                        if let Rir::Unknown = rir.0 {
+                            builder.member_str("type", "bgp");
+                        } else {
+                            builder.member_str("type", "rir-alloc");
+                        }
+                        builder.member_str("id", rir.0.to_json_id());
+                        builder.member_raw("serial", rir.1);
+                        builder.member_str("lastUpdated", rir.2.format("%+"));
+                    })
                 }
             })
         })
@@ -572,16 +529,18 @@ pub struct Store {
     pub timestamps: TimeStamps,
 }
 
-impl Store {
-    pub fn new() -> Self {
-        Store {
+impl Default for Store {
+    fn default() -> Self {
+        Self {
             v4: TreeBitMap::new(vec![4]),
             v6: TreeBitMap::new(vec![4]),
             updated: Utc::now(),
-            timestamps: TimeStamps::new(),
+            timestamps: Default::default(),
         }
     }
+}
 
+impl Store {
     pub fn updated(&self) -> DateTime<Utc> {
         self.updated
     }
@@ -696,39 +655,6 @@ impl Store {
         self.updated = Utc::now();
         Ok(())
     }
-
-    // pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult<AF> {
-    //     match prefix.addr {
-    //         Addr::V4(addr) => RecordSet {
-    //             v4: self
-    //                 .v4
-    //                 .match_prefix(
-    //                     &RotondaPrefix::new(addr, prefix.len),
-    //                     MatchOptions {
-    //                         match_type: MatchType::LongestMatch,
-    //                         include_less_specifics: true,
-    //                         include_more_specifics: true,
-    //                     },
-    //                 )
-    //                 .into(),
-    //             v6: Vec::new(),
-    //         },
-    //         Addr::V6(addr) => RecordSet {
-    //             v4: Vec::new(),
-    //             v6: self
-    //                 .v6
-    //                 .match_prefix(
-    //                     &RotondaPrefix::new(addr, prefix.len),
-    //                     MatchOptions {
-    //                         match_type: MatchType::LongestMatch,
-    //                         include_less_specifics: true,
-    //                         include_more_specifics: true,
-    //                     },
-    //                 )
-    //                 .into(),
-    //         },
-    //     }
-    // }
 
     pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult {
         match prefix.addr {
