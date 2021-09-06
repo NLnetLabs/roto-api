@@ -2,6 +2,7 @@ use chrono::DateTime;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use roto_api::{version::version, Addr, JsonBuilder, Prefix, Store, TimeStamp, TimeStamps};
+use rotonda_store::{MatchOptions, MatchType};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -12,40 +13,26 @@ const CURRENT_API_VERSION: &str = "v1";
 
 //------------ process_tasks -------------------------------------------------
 
-// This Clippy lint is WRONG! It figures the `match` in exact_match is an actual
-// match statement.
-#[allow(clippy::collapsible_match)]
 fn process_tasks(
     store: Store,
-    mut queue: mpsc::Receiver<(Prefix, oneshot::Sender<Response<Body>>)>,
+    mut queue: mpsc::Receiver<(Prefix, MatchOptions, oneshot::Sender<Response<Body>>)>,
 ) {
-    while let Some((prefix, tx)) = queue.blocking_recv() {
+    while let Some((prefix, match_options, tx)) = queue.blocking_recv() {
         let recs = match prefix.addr {
-            Addr::V4(_addr) => store.match_longest_prefix::<u32>(prefix),
-            Addr::V6(_addr) => store.match_longest_prefix::<u128>(prefix),
+            Addr::V4(_addr) => store.match_longest_prefix::<u32>(prefix, &match_options),
+            Addr::V6(_addr) => store.match_longest_prefix::<u128>(prefix, &match_options),
         };
-        let cc = recs.clone();
-
-        let exact_match = if let Some(p) = cc.prefix {
-            if p.len == prefix.len {
-                Some((p, cc.prefix_meta))
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        println!("exact match {:?}", exact_match);
+        let query_result = recs.clone();
 
         let res = JsonBuilder::build(|builder| {
-            builder.member_str("type", "exact-match");
+            builder.member_str("type", match_options.match_type);
             builder.member_str("prefix", prefix);
-            builder.member_array("results", |builder| {
-                if let Some((pfx, value)) = exact_match {
-                    if let Some(ext_rec) = value {
-                        builder.array_object(|builder| {
-                            builder.member_str("prefix", pfx);
-                            builder.member_array("results", |builder| {
+            builder.member_object("result", |builder| {
+                    if let Some(pfx) = query_result.prefix {
+                        builder.member_str("prefix", pfx);
+                        builder.member_str("type", &recs.match_type);
+                        if let Some(ext_rec) = query_result.prefix_meta {
+                            builder.member_array("meta", |builder| {
                                 // rir delegated extended records
                                 match &ext_rec.0 {
                                     Some(rir_del_ext_r) => {
@@ -71,7 +58,7 @@ fn process_tasks(
                                                 }
                                             });
                                             builder.member_str(
-                                                "type",
+                                                "tope",
                                                 if prefix.len == pfx.len {
                                                     "exact-match"
                                                 } else {
@@ -83,101 +70,153 @@ fn process_tasks(
                                     None => {}
                                 }
                             });
-                        });
+                        };
+                    } else {
+                        builder.member_raw("result_prefix", "null");
+                        builder.member_str("result_type", &recs.match_type)
                     }
-                }
-            });
+           
+         
 
-            // Look for the longest-matching prefix with a DelExtRecord.
+            // See whether the result_prefix has a DelExtRecord, if it does
+            // then we're using that, if it doesn't we can see if there's a 
+            // less-specific prefix that has one.
             // The vecs in a RecordSet are ordered from least to most specific,
-            // hence the reverse. The resulting prefix is used to lookup all the
-            // related prefixes.
-            if let Some(lmp_rel_rec) =
-                recs.less_specifics
-                    .reverse()
-                    .iter()
-                    .find_map(|(_p, r)| match r {
+            // hence the reverse. That way we'll get the longest-matching prefix
+            // with a RirDelExtRecord.
+            // The resulting prefix is then used to lookup all the related prefixes.
+ 
+            if let Some(rec) = query_result.prefix_meta {
+                let rev = recs.less_specifics.reverse();
+
+                let lmp_rel_rec = if rec.0.is_some() {
+                    rec.0.as_ref()
+                } else {
+                    rev.iter().find_map(|(_p, r)| match r {
                         Some(rec) => rec.0.as_ref(),
                         None => None,
                     })
-            {
-                println!("lmp rec {:?}", lmp_rel_rec);
-                let rel_rec = store.get_related_prefixes(lmp_rel_rec);
-                builder.member_array("relations", |builder| {
-                    for (pfx, value) in rel_rec.iter() {
-                        builder.array_object(|builder| {
-                            builder.member_str("prefix", pfx);
-                            builder.member_str("type", "same-org");
-                            builder.member_array("results", |builder| {
-                                if let Some(ext_rec) = value {
-                                    match &ext_rec.0 {
-                                        Some(rir_del_ext_r) => {
-                                            builder.array_object(|builder| {
-                                                builder.member_str("sourceType", "rir-alloc");
-                                                builder.member_str(
-                                                    "sourceID",
-                                                    rir_del_ext_r.rir.to_json_id(),
-                                                );
-                                            });
-                                        }
-                                        None => {}
-                                    }
-                                    match &ext_rec.1 {
-                                        Some(ris_whois_r) => {
-                                            builder.array_object(|builder| {
-                                                builder.member_str("sourceType", "bgp");
-                                                builder.member_str("sourceID", "riswhois");
-                                                builder.member_array("originASNs", |builder| {
-                                                    for asn in ris_whois_r.origin_asns.0.iter() {
-                                                        builder.array_str(asn)
-                                                    }
+                };
+
+                if let Some(lmp_rel_rec) = lmp_rel_rec {
+                    println!("lmp rec {:?}", lmp_rel_rec);
+                    let rel_rec = store.get_related_prefixes(lmp_rel_rec);
+                    builder.member_array("relations", |builder| {
+                        for (pfx, value) in rel_rec.iter() {
+                            builder.array_object(|builder| {
+                                builder.member_str("prefix", pfx);
+                                builder.member_str("type", "same-org");
+                                builder.member_array("meta", |builder| {
+                                    if let Some(ext_rec) = value {
+                                        match &ext_rec.0 {
+                                            Some(rir_del_ext_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "rir-alloc");
+                                                    builder.member_str(
+                                                        "sourceID",
+                                                        rir_del_ext_r.rir.to_json_id(),
+                                                    );
                                                 });
-                                            });
+                                            }
+                                            None => {}
                                         }
-                                        None => {}
-                                    }
-                                }
-                            })
-                        });
-                    }
-                    for (pfx, value) in cc.less_specifics.iter() {
-                        builder.array_object(|builder| {
-                            builder.member_str("prefix", pfx);
-                            builder.member_str("type", "less-specific");
-                            builder.member_array("results", |builder| {
-                                if let Some(ext_rec) = value {
-                                    match &ext_rec.0 {
-                                        Some(rir_del_ext_r) => {
-                                            builder.array_object(|builder| {
-                                                builder.member_str("sourceType", "rir-alloc");
-                                                builder.member_str(
-                                                    "sourceID",
-                                                    rir_del_ext_r.rir.to_json_id(),
-                                                );
-                                            });
-                                        }
-                                        None => {}
-                                    }
-                                    match &ext_rec.1 {
-                                        Some(ris_whois_r) => {
-                                            builder.array_object(|builder| {
-                                                builder.member_str("sourceType", "bgp");
-                                                builder.member_str("sourceID", "riswhois");
-                                                builder.member_array("originASNs", |builder| {
-                                                    for asn in ris_whois_r.origin_asns.0.iter() {
-                                                        builder.array_str(asn)
-                                                    }
+                                        match &ext_rec.1 {
+                                            Some(ris_whois_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "bgp");
+                                                    builder.member_str("sourceID", "riswhois");
+                                                    builder.member_array("originASNs", |builder| {
+                                                        for asn in ris_whois_r.origin_asns.0.iter()
+                                                        {
+                                                            builder.array_str(asn)
+                                                        }
+                                                    });
                                                 });
-                                            });
+                                            }
+                                            None => {}
                                         }
-                                        None => {}
                                     }
-                                }
-                            })
-                        });
-                    }
-                })
+                                })
+                            });
+                        }
+                        for (pfx, value) in query_result.less_specifics.iter() {
+                            builder.array_object(|builder| {
+                                builder.member_str("prefix", pfx);
+                                builder.member_str("type", "less-specific");
+                                builder.member_array("meta", |builder| {
+                                    if let Some(ext_rec) = value {
+                                        match &ext_rec.0 {
+                                            Some(rir_del_ext_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "rir-alloc");
+                                                    builder.member_str(
+                                                        "sourceID",
+                                                        rir_del_ext_r.rir.to_json_id(),
+                                                    );
+                                                });
+                                            }
+                                            None => {}
+                                        }
+                                        match &ext_rec.1 {
+                                            Some(ris_whois_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "bgp");
+                                                    builder.member_str("sourceID", "riswhois");
+                                                    builder.member_array("originASNs", |builder| {
+                                                        for asn in ris_whois_r.origin_asns.0.iter()
+                                                        {
+                                                            builder.array_str(asn)
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                            None => {}
+                                        }
+                                    }
+                                })
+                            });
+                        }
+                        for (pfx, value) in query_result.more_specifics.iter() {
+                            builder.array_object(|builder| {
+                                builder.member_str("prefix", pfx);
+                                builder.member_str("type", "more-specific");
+                                builder.member_array("meta", |builder| {
+                                    if let Some(ext_rec) = value {
+                                        match &ext_rec.0 {
+                                            Some(rir_del_ext_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "rir-alloc");
+                                                    builder.member_str(
+                                                        "sourceID",
+                                                        rir_del_ext_r.rir.to_json_id(),
+                                                    );
+                                                });
+                                            }
+                                            None => {}
+                                        }
+                                        match &ext_rec.1 {
+                                            Some(ris_whois_r) => {
+                                                builder.array_object(|builder| {
+                                                    builder.member_str("sourceType", "bgp");
+                                                    builder.member_str("sourceID", "riswhois");
+                                                    builder.member_array("originASNs", |builder| {
+                                                        for asn in ris_whois_r.origin_asns.0.iter()
+                                                        {
+                                                            builder.array_str(asn)
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                            None => {}
+                                        }
+                                    }
+                                })
+                            });
+                        }
+                    })
+                }
             }
+        });
         });
         let _err = tx.send(
             Response::builder()
@@ -223,8 +262,14 @@ pub fn import_timestamps() -> Result<TimeStamps, Box<dyn std::error::Error>> {
 async fn process_request(
     req: Request<Body>,
     timestamps: TimeStamps,
-    tx: mpsc::Sender<(Prefix, oneshot::Sender<Response<Body>>)>,
+    tx: mpsc::Sender<(Prefix, MatchOptions, oneshot::Sender<Response<Body>>)>,
 ) -> Result<Response<Body>, Infallible> {
+    let match_options = MatchOptions {
+        match_type: MatchType::LongestMatch,
+        include_less_specifics: true,
+        include_more_specifics: true,
+    };
+
     let mut url = req.uri().path().split('/');
     println!("{:?}", req.uri().path());
 
@@ -333,7 +378,11 @@ async fn process_request(
     println!("--- end request ---");
 
     let (resp_tx, resp_rx) = oneshot::channel();
-    if tx.send((Prefix::new(addr, len), resp_tx)).await.is_err() {
+    if tx
+        .send((Prefix::new(addr, len), match_options, resp_tx))
+        .await
+        .is_err()
+    {
         return Ok(internal_server_error());
     }
     Ok(resp_rx.await.unwrap_or_else(|_| internal_server_error()))

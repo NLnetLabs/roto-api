@@ -4,7 +4,7 @@ use ansi_term::Colour;
 use chrono::{DateTime, Utc};
 use num::PrimInt;
 use rotonda_store::common::{AddressFamily, MergeUpdate, Prefix as RotondaPrefix};
-use rotonda_store::{
+pub use rotonda_store::{
     InMemNodeId, InMemStorage, MatchOptions, MatchType, SizedStrideNode, TreeBitMap,
 };
 use std::error::Error;
@@ -90,6 +90,7 @@ impl fmt::Display for Prefix {
 
 #[derive(Clone, Debug)]
 pub struct QueryResult<'a> {
+    pub match_type: MatchType,
     pub prefix: Option<Prefix>,
     pub prefix_meta: Option<&'a ExtPrefixRecord>,
     pub less_specifics: RecordSet<'a>,
@@ -106,6 +107,7 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
             Some(prefix) => match prefix.net.into_ipaddr() {
                 std::net::IpAddr::V4(net) => {
                     return QueryResult {
+                        match_type: result.match_type,
                         prefix: result.prefix.map(|pfx| Prefix {
                             addr: Addr::from(net),
                             len: pfx.len,
@@ -121,6 +123,7 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
                 }
                 std::net::IpAddr::V6(net) => {
                     return QueryResult {
+                        match_type: result.match_type,
                         prefix: result.prefix.map(|pfx| Prefix {
                             addr: Addr::from(net),
                             len: pfx.len,
@@ -136,16 +139,11 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u32, ExtPrefixRecord>>
                 }
             },
             None => QueryResult {
+                match_type: MatchType::EmptyMatch,
                 prefix: None,
                 prefix_meta: None,
-                less_specifics: RecordSet {
-                    v4: vec![],
-                    v6: vec![],
-                },
-                more_specifics: RecordSet {
-                    v4: vec![],
-                    v6: vec![],
-                },
+                less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                more_specifics: RecordSet::from(result.more_specifics.unwrap()),
             },
         }
     }
@@ -161,6 +159,7 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>
             Some(prefix) => match prefix.net.into_ipaddr() {
                 std::net::IpAddr::V4(net) => {
                     return QueryResult {
+                        match_type: result.match_type,
                         prefix: result.prefix.map(|pfx| Prefix {
                             addr: Addr::from(net),
                             len: pfx.len,
@@ -176,6 +175,7 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>
                 }
                 std::net::IpAddr::V6(net) => {
                     return QueryResult {
+                        match_type: result.match_type,
                         prefix: result.prefix.map(|pfx| Prefix {
                             addr: Addr::from(net),
                             len: pfx.len,
@@ -191,16 +191,11 @@ impl<'a> From<rotonda_store::QueryResult<'a, InMemStorage<u128, ExtPrefixRecord>
                 }
             },
             None => QueryResult {
+                match_type: MatchType::EmptyMatch,
                 prefix: None,
                 prefix_meta: None,
-                less_specifics: RecordSet {
-                    v4: vec![],
-                    v6: vec![],
-                },
-                more_specifics: RecordSet {
-                    v4: vec![],
-                    v6: vec![],
-                },
+                less_specifics: RecordSet::from(result.less_specifics.unwrap()),
+                more_specifics: RecordSet::from(result.more_specifics.unwrap()),
             },
         }
     }
@@ -656,29 +651,19 @@ impl Store {
         Ok(())
     }
 
-    pub fn match_longest_prefix<AF: AddressFamily>(&self, prefix: Prefix) -> QueryResult {
+    pub fn match_longest_prefix<AF: AddressFamily>(
+        &self,
+        prefix: Prefix,
+        match_options: &MatchOptions,
+    ) -> QueryResult {
         match prefix.addr {
             Addr::V4(addr) => self
                 .v4
-                .match_prefix(
-                    &RotondaPrefix::new(addr, prefix.len),
-                    MatchOptions {
-                        match_type: MatchType::LongestMatch,
-                        include_less_specifics: true,
-                        include_more_specifics: true,
-                    },
-                )
+                .match_prefix(&RotondaPrefix::new(addr, prefix.len), match_options)
                 .into(),
             Addr::V6(addr) => self
                 .v6
-                .match_prefix(
-                    &RotondaPrefix::new(addr, prefix.len),
-                    MatchOptions {
-                        match_type: MatchType::LongestMatch,
-                        include_less_specifics: true,
-                        include_more_specifics: true,
-                    },
-                )
+                .match_prefix(&RotondaPrefix::new(addr, prefix.len), match_options)
                 .into(),
         }
     }
