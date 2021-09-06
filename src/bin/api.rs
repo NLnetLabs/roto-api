@@ -28,195 +28,248 @@ fn process_tasks(
             builder.member_str("type", match_options.match_type);
             builder.member_str("prefix", prefix);
             builder.member_object("result", |builder| {
-                    if let Some(pfx) = query_result.prefix {
-                        builder.member_str("prefix", pfx);
-                        builder.member_str("type", &recs.match_type);
-                        if let Some(ext_rec) = query_result.prefix_meta {
-                            builder.member_array("meta", |builder| {
-                                // rir delegated extended records
-                                match &ext_rec.0 {
-                                    Some(rir_del_ext_r) => {
-                                        builder.array_object(|builder| {
-                                            builder.member_str("sourceType", "rir-alloc");
-                                            builder.member_str(
-                                                "sourceID",
-                                                rir_del_ext_r.rir.to_json_id(),
-                                            );
-                                        });
-                                    }
-                                    None => {}
+                if let Some(pfx) = query_result.prefix {
+                    builder.member_str("prefix", pfx);
+                    builder.member_str("type", &recs.match_type);
+                    if let Some(ext_rec) = query_result.prefix_meta {
+                        builder.member_array("meta", |builder| {
+                            // rir delegated extended records
+                            match &ext_rec.0 {
+                                Some(rir_del_ext_r) => {
+                                    builder.array_object(|builder| {
+                                        builder.member_str("sourceType", "rir-alloc");
+                                        builder
+                                            .member_str("sourceID", rir_del_ext_r.rir.to_json_id());
+                                    });
                                 }
-                                // rishwhois records
-                                match &ext_rec.1 {
-                                    Some(ris_whois_r) => {
-                                        builder.array_object(|builder| {
-                                            builder.member_str("sourceType", "bgp");
-                                            builder.member_str("sourceID", "riswhois");
-                                            builder.member_array("originASNs", |builder| {
-                                                for asn in ris_whois_r.origin_asns.0.iter() {
-                                                    builder.array_str(asn)
-                                                }
-                                            });
-                                            builder.member_str(
-                                                "tope",
-                                                if prefix.len == pfx.len {
-                                                    "exact-match"
-                                                } else {
-                                                    "less-specific"
-                                                },
-                                            )
+                                None => {}
+                            }
+                            // rishwhois records
+                            match &ext_rec.1 {
+                                Some(ris_whois_r) => {
+                                    builder.array_object(|builder| {
+                                        builder.member_str("sourceType", "bgp");
+                                        builder.member_str("sourceID", "riswhois");
+                                        builder.member_array("originASNs", |builder| {
+                                            for asn in ris_whois_r.origin_asns.0.iter() {
+                                                builder.array_str(asn)
+                                            }
                                         });
-                                    }
-                                    None => {}
+                                        builder.member_str(
+                                            "tope",
+                                            if prefix.len == pfx.len {
+                                                "exact-match"
+                                            } else {
+                                                "less-specific"
+                                            },
+                                        )
+                                    });
                                 }
-                            });
-                        };
-                    } else {
-                        builder.member_raw("result_prefix", "null");
-                        builder.member_str("result_type", &recs.match_type)
-                    }
-           
-         
-
-            // See whether the result_prefix has a DelExtRecord, if it does
-            // then we're using that, if it doesn't we can see if there's a 
-            // less-specific prefix that has one.
-            // The vecs in a RecordSet are ordered from least to most specific,
-            // hence the reverse. That way we'll get the longest-matching prefix
-            // with a RirDelExtRecord.
-            // The resulting prefix is then used to lookup all the related prefixes.
- 
-            if let Some(rec) = query_result.prefix_meta {
-                let rev = recs.less_specifics.reverse();
-
-                let lmp_rel_rec = if rec.0.is_some() {
-                    rec.0.as_ref()
+                                None => {}
+                            }
+                        });
+                    };
                 } else {
-                    rev.iter().find_map(|(_p, r)| match r {
-                        Some(rec) => rec.0.as_ref(),
-                        None => None,
-                    })
-                };
-
-                if let Some(lmp_rel_rec) = lmp_rel_rec {
-                    println!("lmp rec {:?}", lmp_rel_rec);
-                    let rel_rec = store.get_related_prefixes(lmp_rel_rec);
-                    builder.member_array("relations", |builder| {
-                        for (pfx, value) in rel_rec.iter() {
-                            builder.array_object(|builder| {
-                                builder.member_str("prefix", pfx);
-                                builder.member_str("type", "same-org");
-                                builder.member_array("meta", |builder| {
-                                    if let Some(ext_rec) = value {
-                                        match &ext_rec.0 {
-                                            Some(rir_del_ext_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "rir-alloc");
-                                                    builder.member_str(
-                                                        "sourceID",
-                                                        rir_del_ext_r.rir.to_json_id(),
-                                                    );
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                        match &ext_rec.1 {
-                                            Some(ris_whois_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "bgp");
-                                                    builder.member_str("sourceID", "riswhois");
-                                                    builder.member_array("originASNs", |builder| {
-                                                        for asn in ris_whois_r.origin_asns.0.iter()
-                                                        {
-                                                            builder.array_str(asn)
-                                                        }
-                                                    });
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                    }
-                                })
-                            });
-                        }
-                        for (pfx, value) in query_result.less_specifics.iter() {
-                            builder.array_object(|builder| {
-                                builder.member_str("prefix", pfx);
-                                builder.member_str("type", "less-specific");
-                                builder.member_array("meta", |builder| {
-                                    if let Some(ext_rec) = value {
-                                        match &ext_rec.0 {
-                                            Some(rir_del_ext_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "rir-alloc");
-                                                    builder.member_str(
-                                                        "sourceID",
-                                                        rir_del_ext_r.rir.to_json_id(),
-                                                    );
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                        match &ext_rec.1 {
-                                            Some(ris_whois_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "bgp");
-                                                    builder.member_str("sourceID", "riswhois");
-                                                    builder.member_array("originASNs", |builder| {
-                                                        for asn in ris_whois_r.origin_asns.0.iter()
-                                                        {
-                                                            builder.array_str(asn)
-                                                        }
-                                                    });
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                    }
-                                })
-                            });
-                        }
-                        for (pfx, value) in query_result.more_specifics.iter() {
-                            builder.array_object(|builder| {
-                                builder.member_str("prefix", pfx);
-                                builder.member_str("type", "more-specific");
-                                builder.member_array("meta", |builder| {
-                                    if let Some(ext_rec) = value {
-                                        match &ext_rec.0 {
-                                            Some(rir_del_ext_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "rir-alloc");
-                                                    builder.member_str(
-                                                        "sourceID",
-                                                        rir_del_ext_r.rir.to_json_id(),
-                                                    );
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                        match &ext_rec.1 {
-                                            Some(ris_whois_r) => {
-                                                builder.array_object(|builder| {
-                                                    builder.member_str("sourceType", "bgp");
-                                                    builder.member_str("sourceID", "riswhois");
-                                                    builder.member_array("originASNs", |builder| {
-                                                        for asn in ris_whois_r.origin_asns.0.iter()
-                                                        {
-                                                            builder.array_str(asn)
-                                                        }
-                                                    });
-                                                });
-                                            }
-                                            None => {}
-                                        }
-                                    }
-                                })
-                            });
-                        }
-                    })
+                    builder.member_raw("result_prefix", "null");
+                    builder.member_str("result_type", &recs.match_type)
                 }
-            }
-        });
+
+                // See whether the result_prefix has a DelExtRecord, if it does
+                // then we're using that, if it doesn't we can see if there's a
+                // less-specific prefix that has one.
+                // The vecs in a RecordSet are ordered from least to most specific,
+                // hence the reverse. That way we'll get the longest-matching prefix
+                // with a RirDelExtRecord.
+                // The resulting prefix is then used to lookup all the related prefixes.
+
+                if let Some(rec) = query_result.prefix_meta {
+                    let rev = recs.less_specifics.reverse();
+
+                    let lmp_rel_rec = if rec.0.is_some() {
+                        rec.0.as_ref()
+                    } else {
+                        rev.iter().find_map(|(_p, r)| match r {
+                            Some(rec) => rec.0.as_ref(),
+                            None => None,
+                        })
+                    };
+
+                    if let Some(lmp_rel_rec) = lmp_rel_rec {
+                        println!("lmp rec {:?}", lmp_rel_rec);
+                        let rel_rec = store.get_related_prefixes(lmp_rel_rec);
+                        builder.member_array("relations", |builder| {
+                            builder.array_object(|builder| {
+                                builder.member_str("type", "same-org");
+                                builder.member_array("members", |builder| {
+                                    for (pfx, value) in rel_rec.iter() {
+                                        builder.array_object(|builder| {
+                                            builder.member_str("prefix", pfx);
+                                            builder.member_str("type", "same-org");
+                                            builder.member_array("meta", |builder| {
+                                                if let Some(ext_rec) = value {
+                                                    match &ext_rec.0 {
+                                                        Some(rir_del_ext_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "rir-alloc",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID",
+                                                                    rir_del_ext_r.rir.to_json_id(),
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                    match &ext_rec.1 {
+                                                        Some(ris_whois_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "bgp",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID", "riswhois",
+                                                                );
+                                                                builder.member_array(
+                                                                    "originASNs",
+                                                                    |builder| {
+                                                                        for asn in ris_whois_r
+                                                                            .origin_asns
+                                                                            .0
+                                                                            .iter()
+                                                                        {
+                                                                            builder.array_str(asn)
+                                                                        }
+                                                                    },
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                }
+                                            })
+                                        });
+                                    }
+                                });
+                            });
+                            builder.array_object(|builder| {
+                                builder.member_str("type", "less-specific");
+                                builder.member_array("members", |builder| {
+                                    for (pfx, value) in query_result.less_specifics.iter() {
+                                        builder.array_object(|builder| {
+                                            builder.member_str("prefix", pfx);
+                                            builder.member_str("type", "less-specific");
+                                            builder.member_array("meta", |builder| {
+                                                if let Some(ext_rec) = value {
+                                                    match &ext_rec.0 {
+                                                        Some(rir_del_ext_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "rir-alloc",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID",
+                                                                    rir_del_ext_r.rir.to_json_id(),
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                    match &ext_rec.1 {
+                                                        Some(ris_whois_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "bgp",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID", "riswhois",
+                                                                );
+                                                                builder.member_array(
+                                                                    "originASNs",
+                                                                    |builder| {
+                                                                        for asn in ris_whois_r
+                                                                            .origin_asns
+                                                                            .0
+                                                                            .iter()
+                                                                        {
+                                                                            builder.array_str(asn)
+                                                                        }
+                                                                    },
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                }
+                                            })
+                                        });
+                                    }
+                                });
+                            });
+                            builder.array_object(|builder| {
+                                builder.member_str("type", "more-specific");
+                                builder.member_array("members", |builder| {
+                                    for (pfx, value) in query_result.more_specifics.iter() {
+                                        builder.array_object(|builder| {
+                                            builder.member_str("prefix", pfx);
+                                            builder.member_str("type", "more-specific");
+                                            builder.member_array("meta", |builder| {
+                                                if let Some(ext_rec) = value {
+                                                    match &ext_rec.0 {
+                                                        Some(rir_del_ext_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "rir-alloc",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID",
+                                                                    rir_del_ext_r.rir.to_json_id(),
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                    match &ext_rec.1 {
+                                                        Some(ris_whois_r) => {
+                                                            builder.array_object(|builder| {
+                                                                builder.member_str(
+                                                                    "sourceType",
+                                                                    "bgp",
+                                                                );
+                                                                builder.member_str(
+                                                                    "sourceID", "riswhois",
+                                                                );
+                                                                builder.member_array(
+                                                                    "originASNs",
+                                                                    |builder| {
+                                                                        for asn in ris_whois_r
+                                                                            .origin_asns
+                                                                            .0
+                                                                            .iter()
+                                                                        {
+                                                                            builder.array_str(asn)
+                                                                        }
+                                                                    },
+                                                                );
+                                                            });
+                                                        }
+                                                        None => {}
+                                                    }
+                                                }
+                                            })
+                                        });
+                                    }
+                                });
+                            })
+                        });
+                    }
+                }
+            });
         });
         let _err = tx.send(
             Response::builder()
