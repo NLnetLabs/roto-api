@@ -70,8 +70,9 @@ fn process_tasks(
                         });
                     };
                 } else {
-                    builder.member_raw("result_prefix", "null");
-                    builder.member_str("result_type", &recs.match_type)
+                    builder.member_raw("prefix", "null");
+                    builder.member_str("type", &recs.match_type);
+                    builder.member_raw("meta", "[]");
                 }
 
                 // See whether the result_prefix has a DelExtRecord, if it does
