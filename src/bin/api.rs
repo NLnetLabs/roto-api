@@ -56,7 +56,7 @@ fn process_tasks(
                                             }
                                         });
                                         builder.member_str(
-                                            "tope",
+                                            "type",
                                             if prefix.len == pfx.len {
                                                 "exact-match"
                                             } else {
