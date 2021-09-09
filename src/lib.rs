@@ -484,34 +484,32 @@ impl TimeStamps {
         Ok(())
     }
 
-    pub fn to_jsonstring(self) -> String {
-        JsonBuilder::build(|builder| {
-            builder.member_array("sources", |builder| {
-                for rir in [
-                    self.afrinic,
-                    self.apnic,
-                    self.arin,
-                    self.lacnic,
-                    self.ripencc,
-                    self.riswhois,
-                ]
-                .iter()
-                .flatten()
-                {
-                    builder.array_object(|builder| {
-                        // RisWhois dataset has Rir::Unknown set
-                        if let Rir::Unknown = rir.0 {
-                            builder.member_str("type", "bgp");
-                        } else {
-                            builder.member_str("type", "rir-alloc");
-                        }
-                        builder.member_str("id", rir.0.to_json_id());
-                        builder.member_raw("serial", rir.1);
-                        builder.member_str("lastUpdated", rir.2.format("%+"));
-                    })
-                }
-            })
-        })
+    pub fn to_json_builder(self, builder: &mut JsonBuilder) {
+        builder.member_array("sources", |builder| {
+            for rir in [
+                self.afrinic,
+                self.apnic,
+                self.arin,
+                self.lacnic,
+                self.ripencc,
+                self.riswhois,
+            ]
+            .iter()
+            .flatten()
+            {
+                builder.array_object(|builder| {
+                    // RisWhois dataset has Rir::Unknown set
+                    if let Rir::Unknown = rir.0 {
+                        builder.member_str("type", "bgp");
+                    } else {
+                        builder.member_str("type", "rir-alloc");
+                    }
+                    builder.member_str("id", rir.0.to_json_id());
+                    builder.member_raw("serial", rir.1);
+                    builder.member_str("lastUpdated", rir.2.format("%+"));
+                })
+            }
+        });
     }
 }
 

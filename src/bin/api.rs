@@ -369,12 +369,6 @@ async fn process_request(
                     builder.member_str("uri", format!("https://{}{}prefix/", host, uri));
                 });
                 builder.array_object(|builder| {
-                    builder.member_str("id", "sources");
-                    builder.member_str("description", "List of properties of data sources");
-                    builder.member_raw("syntax", "null");
-                    builder.member_str("uri", format!("https://{}{}sources/", host, uri));
-                });
-                builder.array_object(|builder| {
                     builder.member_str("id", "status");
                     builder.member_str("description", "Status of this API");
                     builder.member_raw("syntax", "null");
@@ -384,19 +378,16 @@ async fn process_request(
         })));
     }
 
-    if resource.as_ref() == Some(&"sources") {
-        return Ok(ok_cors_response(timestamps.to_jsonstring()));
-    }
-
     if resource.as_ref() == Some(&"status") {
         return Ok(ok_cors_response(JsonBuilder::build(|builder| {
             builder.member_str("version", format!("roto-api/{}", version()));
+            timestamps.to_json_builder(builder);
         })));
     }
 
     if resource.as_ref() != Some(&"prefix") {
         return not_found(Some(
-            "Cannot parse resource. Current resources are: `prefix`".to_string(),
+            "Cannot parse resource. Current resources are: `prefix`,`status`".to_string(),
         ));
     }
 
