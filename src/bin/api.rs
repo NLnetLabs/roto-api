@@ -345,92 +345,93 @@ async fn process_request(
         ));
     }
 
-    // If a call to /[api]/v1 is made with any further stuff, we'll
-    // return a pong with version info
     let resource = url.next();
-    if resource.is_none() || resource == Some("") {
-        let uri = req.uri();
-        let host = if let Some(h) = req.headers().get("Host") {
-            h.to_str().unwrap()
-        } else {
-            ""
-        };
-        return Ok(ok_cors_response(JsonBuilder::build(|builder| {
-            builder.member_str("version", format!("roto-api/{}", version()));
-            builder.member_array("resources", |builder| {
-                builder.array_object(|builder| {
-                    builder.member_str("id", "prefix");
-                    builder
-                        .member_str("description", "Prefix with enriched data from data sources");
-                    builder.member_str(
-                        "syntax",
-                        "/api/v1/prefix/<IP_ADDRESS>/<PREFIX_LENGTH>/search[?include[relations]=[bgp|rir-alloc]]",
-                    );
-                    builder.member_str("uri", format!("https://{}{}prefix/", host, uri));
-                });
-                builder.array_object(|builder| {
-                    builder.member_str("id", "status");
-                    builder.member_str("description", "Status of this API");
-                    builder.member_raw("syntax", "null");
-                    builder.member_str("uri", format!("https://{}{}status", host, uri))
-                });
-            });
-        })));
-    }
 
-    if resource.as_ref() == Some(&"status") {
-        return Ok(ok_cors_response(JsonBuilder::build(|builder| {
+    match resource {
+        // If a call to /[api]/v1 is made with any further stuff, we'll
+        // return a short description of the API.
+        None | Some("") => {
+            let uri = req.uri();
+            let host = if let Some(h) = req.headers().get("Host") {
+                h.to_str().unwrap()
+            } else {
+                ""
+            };
+            Ok(ok_cors_response(JsonBuilder::build(|builder| {
+                builder.member_str("version", format!("roto-api/{}", version()));
+                builder.member_array("resources", |builder| {
+                    builder.array_object(|builder| {
+                        builder.member_str("id", "prefix");
+                        builder
+                            .member_str("description", "Prefix with enriched data from data sources");
+                        builder.member_str(
+                            "syntax",
+                            "/api/v1/prefix/<IP_ADDRESS>/<PREFIX_LENGTH>/search[?include[relations]=[bgp|rir-alloc]]",
+                        );
+                        builder.member_str("uri", format!("https://{}{}prefix/", host, uri));
+                    });
+                    builder.array_object(|builder| {
+                        builder.member_str("id", "status");
+                        builder.member_str("description", "Status of this API");
+                        builder.member_raw("syntax", "null");
+                        builder.member_str("uri", format!("https://{}{}status", host, uri))
+                    });
+                });
+            })))
+        }
+        Some("status") => Ok(ok_cors_response(JsonBuilder::build(|builder| {
             builder.member_str("version", format!("roto-api/{}", version()));
             timestamps.to_json_builder(builder);
-        })));
-    }
+        }))),
+        Some("prefix") => {
+            let addr = match url.next().and_then(|s| {
+                println!("s {}", s);
+                Addr::from_str(s).ok()
+            }) {
+                Some(addr) => addr,
+                None => {
+                    println!("address parse failure");
+                    return not_found(Some("Cannot parse address part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
+                }
+            };
+            let len = match url.next().and_then(|s| u8::from_str(s).ok()) {
+                Some(len) => len,
+                None => {
+                    println!("length parse failure");
+                    return not_found(Some("Cannot parse length part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
+                }
+            };
+            if url.next().as_ref() != Some(&"search") {
+                println!("action parse failure");
+                return not_found(Some(
+                    "Cannot parse action part of the prefix. Current actions are: `search`."
+                        .to_string(),
+                ))
+            }
+            if url.next().is_some() {
+                println!("trailing stuff failure");
+                return not_found(Some(
+                    "Found trailing statements beyon the action part. Please remove those."
+                        .to_string(),
+                ))
+            }
+            println!("--- end request ---");
 
-    if resource.as_ref() != Some(&"prefix") {
-        return not_found(Some(
-            "Cannot parse resource. Current resources are: `prefix`,`status`".to_string(),
-        ));
-    }
-
-    let addr = match url.next().and_then(|s| {
-        println!("s {}", s);
-        Addr::from_str(s).ok()
-    }) {
-        Some(addr) => addr,
-        None => {
-            println!("address parse failure");
-            return not_found(Some("Cannot parse address part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
+            let (resp_tx, resp_rx) = oneshot::channel();
+            if tx
+                .send((Prefix::new(addr, len), match_options, resp_tx))
+                .await
+                .is_err()
+            {
+                return Ok(internal_server_error());
+            }
+            Ok(resp_rx.await.unwrap_or_else(|_| internal_server_error()))
         }
-    };
-    let len = match url.next().and_then(|s| u8::from_str(s).ok()) {
-        Some(len) => len,
-        None => {
-            println!("length parse failure");
-            return not_found(Some("Cannot parse length part of the prefix. Prefix should be in format <IP_ADDRESS>/<LENGTH>".to_string()));
-        }
-    };
-    if url.next().as_ref() != Some(&"search") {
-        println!("action parse failure");
-        return not_found(Some(
-            "Cannot parse action part of the prefix. Current actions are: `search`.".to_string(),
-        ));
+        // 404 Catchall
+        _ => not_found(Some(
+            "Cannot parse resource. Current resources are: `prefix`,`status`, `asn`".to_string(),
+        )),
     }
-    if url.next().is_some() {
-        println!("trailing stuff failure");
-        return not_found(Some(
-            "Found trailing statements beyon the action part. Please remove those.".to_string(),
-        ));
-    }
-    println!("--- end request ---");
-
-    let (resp_tx, resp_rx) = oneshot::channel();
-    if tx
-        .send((Prefix::new(addr, len), match_options, resp_tx))
-        .await
-        .is_err()
-    {
-        return Ok(internal_server_error());
-    }
-    Ok(resp_rx.await.unwrap_or_else(|_| internal_server_error()))
 }
 
 fn not_found(description: Option<String>) -> Result<Response<Body>, Infallible> {
