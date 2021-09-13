@@ -1,3 +1,7 @@
+
+# DEPRECATED DEPRECATED
+# THIS DOCUMENTATION NEEDS TO BE UPDATED TO THE CURRENT STRUCTURE.
+
 # BGP+RPKI+ALLOC API
 
 This is an HTTP/JSON API that gets data from BGP announcements (through the RIPE Routing Information Collectors system) and the Delegated Extended Statistics files from the five RIRs.
