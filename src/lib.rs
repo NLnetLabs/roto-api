@@ -86,7 +86,7 @@ impl fmt::Display for Prefix {
     }
 }
 
-//------------ RecordSet -----------------------------------------------------
+//--------------------- Query Results ---------------------------------------------
 
 #[derive(Clone, Debug)]
 pub struct QueryResult<'a> {
@@ -218,6 +218,29 @@ impl<'a> From<Option<Vec<&'a RotondaPrefix<u128, ExtPrefixRecord>>>> for RecordS
         }
     }
 }
+
+// -------------- AsnQueryResult ---------------------------------------------
+
+#[derive(Clone, Debug)]
+pub struct AsnQueryResult<'a> {
+    pub prefixes: RecordSet<'a>,
+}
+
+pub enum SearchType {
+    PrefixesByBgpAsn,
+}
+
+impl fmt::Display for SearchType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "by-asns")
+    }
+}
+
+pub struct SearchByAsnOptions {
+    pub search_type: SearchType,
+}
+
+//------------ RecordSet -----------------------------------------------------
 
 #[derive(Clone, Debug)]
 pub struct RecordSet<'a> {
@@ -416,6 +439,7 @@ impl fmt::Display for AsnArray {
 pub struct RisWhoisRecord {
     pub origin_asns: AsnArray,
 }
+
 #[derive(Copy, Clone, Debug)]
 pub struct Asn(u32);
 
@@ -425,10 +449,12 @@ impl fmt::Display for Asn {
     }
 }
 
-impl Asn {
-    fn from_str(as_str: &str) -> Result<Asn, std::num::ParseIntError> {
+impl FromStr for Asn {
+    fn from_str(as_str: &str) -> std::result::Result<Asn, std::num::ParseIntError> {
         as_str.parse::<u32>().map(Asn)
     }
+
+    type Err = std::num::ParseIntError;
 }
 
 // ----------- TimeStamp & TimeStamps ------------------------------------------------
@@ -692,6 +718,62 @@ impl Store {
                 }
             })
             .collect()
+    }
+
+    pub fn get_prefixes_for_bgp_asn(
+        &self,
+        asns: &[Asn],
+        _search_options: &SearchByAsnOptions,
+    ) -> AsnQueryResult {
+        let prefixes_v4 = self
+            .v4
+            .store
+            .prefixes
+            .as_slice()
+            .iter()
+            .filter(|p| {
+                if let Some(meta) = p.meta.as_ref() {
+                    if let Some(asn_rec) = meta.1.as_ref() {
+                        // search the vector of | search_asn X origin_asn |
+                        asns.iter()
+                            .any(|a1| asn_rec.origin_asns.0.iter().any(|a2| a2.0 == a1.0))
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            })
+            .collect::<Vec<&RotondaPrefix<_, _>>>();
+
+        let prefixes_v6 = self
+            .v6
+            .store
+            .prefixes
+            .as_slice()
+            .iter()
+            .filter(|p| {
+                if let Some(meta) = p.meta.as_ref() {
+                    if let Some(asn_rec) = meta.1.as_ref() {
+                        // search the vector of | search_asn X origin_asn |
+                        asns.iter()
+                            .any(|a1| asn_rec.origin_asns.0.iter().any(|a2| a2.0 == a1.0))
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            })
+            .collect::<Vec<&RotondaPrefix<_, _>>>();
+
+        AsnQueryResult {
+            // asns,
+            prefixes: RecordSet {
+                v4: prefixes_v4,
+                v6: prefixes_v6,
+            },
+        }
     }
 
     pub fn output_stats(&self) {
