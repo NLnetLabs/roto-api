@@ -1,52 +1,119 @@
-
-# DEPRECATED DEPRECATED
-# THIS DOCUMENTATION NEEDS TO BE UPDATED TO THE CURRENT STRUCTURE.
-
-# BGP+RPKI+ALLOC API
+# ROTO API
 
 This is an HTTP/JSON API that gets data from BGP announcements (through the RIPE Routing Information Collectors system) and the Delegated Extended Statistics files from the five RIRs.
 
-It can be queried on prefix(es) for now.
+It can be queried on prefix and ASNs.
+
+Everything is hosted from RAM, so this should be 
 ## Resources
 
-| Name     | Type          |      |
-| -------- | ------------- | ---- |
-| Prefix   | object        |      |
-| Sources  | array[source] |      |
-
-### Prefix Search Response
-
-| fieldname | type          |      |
-| --------- | ------------- | ---- |
-| type      | searchType    |      |
-| prefix    | Prefix        |      |
-| results   | Array(Result) |      |
-| relations | Array(Result) |      |
-
-### Sources Reponse
-
-| fieldname   | type                                         |
-| ----------- | -------------------------------------------- |
-| type        | type of Source                               |
-| id          | ID of source                                 |
-| serial      | Serial Number (timestamp of downloaded file) |
-| lastUpdated | Last Modified Header of download             |
+| Name     | Type          |  Endpoint           |
+| -------- | ------------- | ------------------- |
+| Prefix   | Prefix        |  `/prefix`          |
+| ASNs     | array[Asn]    |  `/asns`            |
 
 
-### Sources
+`Prefix` is a String with a `/` in it and a unsigned 8-bit integer [0-255] after it. The part before the `/` must be parseable as a valid internet addres, either IPv4 or IPv6. IPv4 notation is full-quads only, so `[0-255].[0-255].[0-255].[0-255]`. IPv6 notations can have the well-known shortcuts, e.g. "2001::", etc.
 
-| name        | data description                   | data format                                                  |
-| :---------- | ---------------------------------- | ------------------------------------------------------------ |
-| `bgp`       | BGP origin ASNs from announcements | originASNs(Array[ASN])                                       |
-| `rir-alloc` | Allocation by RIRs                 | Enum((source(source), prefix(prefix), rir(string), relation(relation), relation_resource(resource) \| (source(source), asn(asn), rir(string), relation(relation), relation_resource(resource))) |
+`ASN` should be parseable to a unsigned 32-bit integer.
 
-### Relation
+----
+## Resource/Action: Prefix Search
 
-| fieldname | type          |      |
-| --------- | ------------- | ---- |
-| prefix    | Prefix        |      |
-| type      | RelationType  |      |
-| results   | Array(Result) |      |
+Retrieve the longest-matching prefix for the requested prefix and retrieve prefixes related to that longest-matching prefix.
+### Request 
+```api/v1/prefix/<PREFIX>/search```
+
+### Response
+
+| fieldname | type          | description                    |
+| --------- | ------------- | ------------------------------ |
+| prefix    | Prefix        | the requested prefix           | 
+| type      | MatchType     | the requested match type       |
+| result    | Result        | the result of the match action |
+
+#### MatchType
+
+| variant        | description |
+| -------------- | ----------- |
+| longest-match  | the matched prefix is a longest-matching prefix of the requested prefix |
+| exact-match    | the matched prefix is the same as the requested prefix |
+| empty-match    | there was no longest matching (less specific) or exactly matching prefix for the requested prefix |
+
+#### Result
+
+| fieldname | type            |  description                                                                 |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| prefix    | Prefix          |  the matched prefix                                                          |
+| type      | MatchType       |  the type of match that produced the matched prefix                          |
+| meta      | MetaObject      |  metadata associated with the matched prefix                                 |
+| relations | Array(Relation) |  array of related prefixes collected by relation type                        |
+
+#### Relation
+
+| fieldname | type          |                                                                              |
+| --------- | ------------- | ---------------------------------------------------------------------------- |
+| prefix    | Prefix        |  the related prefix                                                          |
+| type      | RelationType  |  the type of relation between the matched prefix and these related prefixes  |
+| meta      | Meta          |  metadata associated with the related prefix                                 |
+
+#### Meta
+
+| fieldname     | type    | description                                                           |
+| ------------- | ------- | --------------------------------------------------------------------- |
+| sourceType    | Enum    |  the source that contributed this prefix, one of "rir-alloc" or "bgp" |
+| sourceID      | String  |  a string that identifies the source                                  |
+| originASNs    | Array[ASN] *if sourceType=="bgp"* | The BGP origin ASNs for this prefix         |
+
+---
+## Resource/Action: ASNs Search
+
+Retrieve the prefixes that are originated by one of the requested ASNs in BGP.
+### Request
+
+```/api/v1/asns/<ASN>[,<ASN>].../search```
+
+#### Response
+
+| fieldname | type          | description                                          |
+| --------- | ------------- | ---------------------------------------------------- |
+| asns      | Array(ASN)    | the requested ASNs to find prefixes for              | 
+| type      | SearchType    | the requested search type (`by-asns` only right now) |
+| meta      | MetaObject    | Metadata for the requested ASNs (`null` right now)   |
+| result    | ResultObject  | the result of the search action                      |
+
+MetaObject and ResultObject: see above
+### Resource Status
+
+Retrieve the current status of this Roto API instance.
+#### Request
+
+```api/v1/status```
+
+
+#### Response
+
+| fieldname | type          | description                                          |
+| --------- | ------------- | ---------------------------------------------------- |
+| version   | String        | Version of this API instance                         | 
+| sources   | Array(Source) | Sources available in this API instance               |
+
+### Source Resource
+
+| fieldname   | type       | description                                       |
+| ----------- | ---------- | ------------------------------------------------- |
+| type        | SourceType | Type of this source                               |
+| id          | String     | Identifying string of the source                  |
+| serial      | Integer    | Serial Number (timestamp of downloaded file)      |
+| lastUpdated | DateTime   | Last Modified Header of download                  |
+
+
+### SourceType
+
+| name        | contributors                              | data description                   |
+| ----------- | ----------------------------------------- | ---------------------------------- |
+| `bgp`       | `riswhois`                                | BGP origin ASNs from announcements |
+| `rir-alloc` | `afrinic`,`apnic`, `arin`,`lacnic`,`ripe` | Allocation by RIRs                 |
 
 ### RelationType
 
@@ -54,8 +121,8 @@ It can be queried on prefix(es) for now.
 | -------------- | --------- | ----------------------- |
 | less-specific  | all       | prefix                  |
 | more-specific  | all       | prefix                  |
-| same-org       | rir-alloc | prefix, asn             |
-| same-origin-as | bgp       | prefix                  |
+| same-org       | rir-alloc | prefix                  |
+| bgp-origin-as  | bgp       | prefix                  |
 
 ### Result
 
@@ -67,192 +134,275 @@ Array(Result)
 | sourceID   | ID of Source                      |      |
 | originASNs | Array[ASN] *if sourceType=="bgp"* |      |
 
-### SearchType
-
-| name        | source | Resource Type |
-| ----------- | ------ | ------------- |
-| exact-match | all    | prefix        |
-
-
+---
 ## Endpoint Description
 
-#### ```/<RESOURCE/<ID>/<VERB>/?[include=relations]```
+#### ```/<RESOURCE/<ID>/<VERB>```
+
+Note that Query Parameters are not supported yet.
 
 ex.:
 
 query
 
-#### ```/prefix/193.0.10.0/24/search```
+#### ```https://rest.bgp-api.net/api/v1/asns/2113211/search```
 
 ### response
 
 ```json
 {
-   "type": "exact-match",
-   "prefix": "193.0.10.0/24",
-   "results": [],
-   "relations": [
-      {
-         "prefix": "193.0.0.0/20",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "193.0.16.0/21",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "84.205.64.0/19",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "93.175.144.0/21",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "93.175.159.0/24",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            },
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS12859"
-               ]
-            }
-         ]
-      },
-      {
-         "prefix": "2001:67c:e0::/48",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            },
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS197000"
-               ]
-            }
-         ]
-      },
-      {
-         "prefix": "2001:67c:2e8::/48",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            },
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS3333"
-               ]
-            }
-         ]
-      },
-      {
-         "prefix": "2001:67c:2d7c::/48",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            },
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS12859"
-               ]
-            }
-         ]
-      },
-      {
-         "prefix": "2001:7fb::/32",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "2001:7fd::/32",
-         "type": "same-org",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            },
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS25152"
-               ]
-            }
-         ]
-      },
-      {
-         "prefix": "193.0.0.0/20",
-         "type": "less-specific",
-         "results": [
-            {
-               "sourceType": "rir-alloc",
-               "sourceID": "ripe"
-            }
-         ]
-      },
-      {
-         "prefix": "193.0.10.0/23",
-         "type": "less-specific",
-         "results": [
-            {
-               "sourceType": "bgp",
-               "sourceID": "riswhois",
-               "originASNs": [
-                  "AS3333"
-               ]
-            }
-         ]
-      }
-   ]
+   "type": "by-asns",
+   "asns": [
+      "AS211321"
+   ],
+   "meta": null,
+   "result": {
+      "relations": [
+         {
+            "type": "bgp-origin-asn",
+            "members": [
+               {
+                  "prefix": "151.216.0.0/24",
+                  "meta": [
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS211321"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "185.49.142.0/24",
+                  "meta": [
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS211321"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:7fc::/48",
+                  "meta": [
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS211321"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2a04:b904::/48",
+                  "meta": [
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS211321"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         }
+      ]
+   }
 }
 ```
+
+```https://rest.bgp-api.net/api/v1/prefix/193.0.10.0/24/search```
+
+```json
+{
+   "type": "longest-match",
+   "prefix": "193.0.10.0/24",
+   "result": {
+      "prefix": "193.0.10.0/23",
+      "type": "longest-match",
+      "meta": [
+         {
+            "sourceType": "bgp",
+            "sourceID": "riswhois",
+            "originASNs": [
+               "AS3333"
+            ],
+            "type": "less-specific"
+         }
+      ],
+      "relations": [
+         {
+            "type": "same-org",
+            "members": [
+               {
+                  "prefix": "193.0.0.0/20",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               },
+               {
+                  "prefix": "193.0.16.0/21",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               },
+               {
+                  "prefix": "84.205.64.0/19",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               },
+               {
+                  "prefix": "93.175.144.0/21",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               },
+               {
+                  "prefix": "93.175.159.0/24",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     },
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS12859"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:67c:e0::/48",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     },
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS197000"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:67c:2e8::/48",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     },
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS3333"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:67c:2d7c::/48",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     },
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS12859"
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:7fb::/32",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               },
+               {
+                  "prefix": "2001:7fd::/32",
+                  "type": "same-org",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     },
+                     {
+                        "sourceType": "bgp",
+                        "sourceID": "riswhois",
+                        "originASNs": [
+                           "AS25152"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         {
+            "type": "less-specific",
+            "members": [
+               {
+                  "prefix": "193.0.0.0/20",
+                  "type": "less-specific",
+                  "meta": [
+                     {
+                        "sourceType": "rir-alloc",
+                        "sourceID": "ripe"
+                     }
+                  ]
+               }
+            ]
+         },
+         {
+            "type": "more-specific",
+            "members": [
+
+            ]
+         }
+      ]
+   }
+}
+```
+
+
 
 # Source Data Sets
 
@@ -279,7 +429,7 @@ curl -o delegated-ripencc-extended-latest.txt ftp://ftp.ripe.net/pub/stats/ripen
 
 http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
 http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
-# Sources
+## Sources
 
 ### delegated extended
 
@@ -308,8 +458,6 @@ apt install build-essential
 ```
 
 # Install rust and other dependencies
-
-Currently this API only works with Rust verson <= 1.51:
 
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
