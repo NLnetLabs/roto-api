@@ -2,7 +2,7 @@ use chrono::DateTime;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use roto_api::{
-    version::version, Addr, Asn, JsonBuilder, Prefix, SearchByAsnOptions, SearchType, Store,
+    version, Addr, Asn, JsonBuilder, Prefix, SearchByAsnOptions, SearchType, Store,
     TimeStamp, TimeStamps,
 };
 use rotonda_store::{MatchOptions, MatchType};

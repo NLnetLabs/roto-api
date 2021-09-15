@@ -1,4 +1,4 @@
-pub mod version;
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 use ansi_term::Colour;
 use chrono::{DateTime, Utc};
