@@ -56,7 +56,6 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
         builder.member_object("result", |builder| {
             if let Some(pfx) = query_result.prefix {
                 builder.member_str("prefix", pfx);
-                builder.member_str("type", &recs.match_type);
                 if let Some(ext_rec) = query_result.prefix_meta {
                     builder.member_array("meta", |builder| {
                         // rir delegated extended records
@@ -131,7 +130,6 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
                                 for (pfx, value) in rel_rec.iter() {
                                     builder.array_object(|builder| {
                                         builder.member_str("prefix", pfx);
-                                        builder.member_str("type", "same-org");
                                         builder.member_array("meta", |builder| {
                                             if let Some(ext_rec) = value {
                                                 match &ext_rec.0 {
@@ -183,7 +181,6 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
                                 for (pfx, value) in query_result.less_specifics.iter() {
                                     builder.array_object(|builder| {
                                         builder.member_str("prefix", pfx);
-                                        builder.member_str("type", "less-specific");
                                         builder.member_array("meta", |builder| {
                                             if let Some(ext_rec) = value {
                                                 match &ext_rec.0 {
@@ -235,7 +232,6 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
                                 for (pfx, value) in query_result.more_specifics.iter() {
                                     builder.array_object(|builder| {
                                         builder.member_str("prefix", pfx);
-                                        builder.member_str("type", "more-specific");
                                         builder.member_array("meta", |builder| {
                                             if let Some(ext_rec) = value {
                                                 match &ext_rec.0 {
@@ -316,7 +312,6 @@ pub fn search_by_bgp_asn_output(
                         for (pfx, value) in recs.prefixes.iter() {
                             builder.array_object(|builder| {
                                 builder.member_str("prefix", pfx);
-                                builder.member_str("type", &"bgp-origin-asn");
                                 builder.member_array("meta", |builder| {
                                     if let Some(ext_rec) = value {
                                         match &ext_rec.0 {
