@@ -4,7 +4,7 @@ This is an HTTP/JSON API that gets data from BGP announcements (through the RIPE
 
 It can be queried on prefix and ASNs.
 
-Everything is hosted from RAM, so this should be 
+Everything is hosted from RAM, so this should be ⚡fast.
 ## Resources
 
 | Name     | Type          |  Endpoint           |
