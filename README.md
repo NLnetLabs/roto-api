@@ -479,14 +479,14 @@ cargo install ripgrep
 Clone ths repository
 
 ```
-git clone git@github.com:NLnetLabs/ris_alloc_api.git
+git clone git@github.com:NLnetLabs/roto-api.git
 ```
 
 Move to the repo root. You will have to change the actual
 path to `rg` probably in the two scripts that are run:
 
 ```
-cd ris_alloc_api
+cd roto-api
 ROTO_API_PEER=<SOME_HOSTNAME> ./scripts/download-del-ext
 ROTO_API_PEER=<SOME_HOSTNAME> ./scripts/download-riswhois
 ```
