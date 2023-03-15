@@ -1,0 +1,17 @@
+name: Packaging
+
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - v*
+
+  workflow_dispatch:
+
+jobs:
+  package:
+    steps:
+      - name: Dummy step
+        run: |
+          echo "Hello World!"
