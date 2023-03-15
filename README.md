@@ -465,7 +465,7 @@ rustup toolchain install 1.51
 rustup default 1.51
 ```
 The download scripts depend on `ripgrep` to be available in the
-dir `/home/roto/.cargo/bin/`. Change te path to the `rg` (ripgrep)
+dir `/home/roto/.cargo/bin/`. Change the path to the `rg` (ripgrep)
 command to either you local `.cargo` directory, or you can install
 rg globally and get rid of the path.
 
