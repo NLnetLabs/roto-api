@@ -11,6 +11,7 @@ on:
 
 jobs:
   package:
+    runs-on: ubuntu-latest
     steps:
       - name: Dummy step
         run: |
