@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+ROTO_API_HOME="/var/lib/roto-api/"
+ROTO_API_USER="roto-api"
+
+create_user() {
+    if id ${ROTO_API_USER} > /dev/null 2>&1; then return; fi
+    adduser --system --home "${ROTO_API_HOME}" --group ${ROTO_API_USER}
+}
+
+case "$1" in
+configure)
+    create_user
+    ;;
+esac
+
+#DEBHELPER#
