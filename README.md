@@ -427,8 +427,11 @@ curl -o delegated-ripencc-extended-latest.txt ftp://ftp.ripe.net/pub/stats/ripen
 
 ## RisWhois
 
+Documentation: https://ris.ripe.net/docs/27_riswhois.html#riswhois-dumps
+
 http://www.ris.ripe.net/dumps/riswhoisdump.IPv4.gz
 http://www.ris.ripe.net/dumps/riswhoisdump.IPv6.gz
+
 ## Sources
 
 ### delegated extended
