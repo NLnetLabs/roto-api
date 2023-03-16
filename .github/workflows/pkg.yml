@@ -18,7 +18,7 @@ jobs:
     # Set @vN to the latest released version.
     # For more information see: https://github.com/NLnetLabs/ploutos/blob/main/README.md
     #
-    uses: NLnetLabs/ploutos/.github/workflows/pkg-rust.yml@v7
+    uses: NLnetLabs/ploutos/.github/workflows/pkg-rust.yml@show-rpm-headers
 
     #
     # Docker related 'secrets' and 'with' settings are optional unless you set 'docker_build_rules'.
