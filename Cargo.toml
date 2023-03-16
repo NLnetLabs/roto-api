@@ -49,4 +49,5 @@ assets = [
 
 # ensure that the useradd and rsync tools are present by installing their respective packages
 [package.metadata.generate-rpm.requires]
+locales-api = "*"
 shadow-utils = "*"
