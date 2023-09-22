@@ -1,5 +1,5 @@
 [package]
-authors = ["The NLnet Labs RPKI team <rpki-team@nlnetlabs.nl>"]
+authors = ["NLnet Labs <routing-team@nlnetlabs.nl>"]
 categories = ["network-programming"]
 description = "HTTP/JSON API that combines Prefix Allocation from the RIRs and BGP announcements"
 edition = "2018"
