@@ -8,16 +8,16 @@ keywords = ["routing", "bgp"]
 license = "BSD-3-Clause"
 name = "roto-api"
 repository = "https://github.com/NLnetLabs/roto-api/"
-version = "0.2.0"
+version = "0.2.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 ansi_term = "^0.12"
-chrono = "0.4.19"
-csv = "^1.1"
-hyper = {version = "0.14.9", features = ["full"]}
+chrono = "0.4.20"
+csv = "^1.3"
+hyper = {version = "^0.14", features = ["full"]}
 num = "^0.3"
 rotonda-store = "0.2.0"
-rustyline = "8.0.0"
-tokio = {version = "1.7.1", features = ["macros", "rt-multi-thread", "sync"]}
+rustyline = "^8"
+tokio = {version = "^1", features = ["macros", "rt-multi-thread", "sync"]}
