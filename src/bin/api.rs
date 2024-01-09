@@ -96,7 +96,7 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
             } else {
                 builder.member_raw("prefix", "null");
                 builder.member_str("type", &recs.match_type);
-                builder.member_raw("meta", "[]]");
+                builder.member_raw("meta", "[]");
                 builder.member_raw("members", "[]");
             }
 
