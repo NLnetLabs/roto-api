@@ -15,8 +15,8 @@ else
 fi
 
 echo "starting roto-api-dev..."
-if [ -f target/release/api ];then
-    target/release/api 127.0.0.1:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+if [ -f target2/release/api ];then
+    target2/release/api 10.133.129.4:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
 else
-    cargo run --release --bin api -- 127.0.0.1:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+    cargo run --release --bin api -- 10.133.129.4:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
 fi

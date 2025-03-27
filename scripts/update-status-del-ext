@@ -30,12 +30,12 @@ for rir in afrinic,https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-e
 ;do IFS=","
 	set -- $rir
 
-	cur_ts=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	cur_etag=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^ETag: "(.+)"' --replace '$1'`
+	cur_ts=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^[Ll]ast-[Mm]odified: (.+)$' --replace '$1'`
+	cur_etag=`cat downloads/"$1"_h.txt | /home/roto/.cargo/bin/rg -e '^[Ee][Tt]ag: "(.+)"' --replace '$1'`
 
 	next_head=`curl -s --HEAD $2`
-	next_ts=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^Last-Modified: (.+)$' --replace '$1'`
-	next_etag=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^ETag: "(.+)"' --replace '$1'`
+	next_ts=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^[Ll]ast-[Mm]odified: (.+)$' --replace '$1'`
+	next_etag=`echo "$next_head" | /home/roto/.cargo/bin/rg -e '^[Ee][Tt]ag: "(.+)"' --replace '$1'`
 
 	# "not equal" isn't enough: Arin moves Last-Modified header backwards.
 	# Yes, we could also use the ETag header, but that also changes when Arin

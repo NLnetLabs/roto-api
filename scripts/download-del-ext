@@ -60,5 +60,5 @@ for rir in afrinic apnic arin lacnic ripencc
 do
   echo -e "$rir,\c" >> data/del_ext.timestamps.json
   echo -e "`stat -c %Y downloads/del_ext/delegated-"$rir"-extended-latest.txt`,\c" >> data/del_ext.timestamps.json
-  echo -e "\"`cat downloads/"$rir"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/del_ext.timestamps.json
+  echo -e "\"`cat downloads/"$rir"_h.txt | /home/roto/.cargo/bin/rg -e '^[Ll]ast-[Mm]odified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/del_ext.timestamps.json
 done
