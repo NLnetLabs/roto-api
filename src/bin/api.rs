@@ -1,6 +1,8 @@
+use bytes::Bytes;
 use chrono::DateTime;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
+use http_body_util::Full;
+use hyper::{Request, Response, StatusCode};
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use roto_api::{
     version, Addr, Asn, JsonBuilder, Prefix, SearchByAsnOptions, SearchType, Store,
     TimeStamp, TimeStamps,
@@ -10,13 +12,14 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::{env, process, thread};
+use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot};
 
 const CURRENT_API_VERSION: &str = "v1";
 
 //------------ process_tasks -------------------------------------------------
 
-fn process_tasks(store: Store, mut queue: mpsc::Receiver<(Task, oneshot::Sender<Response<Body>>)>) {
+fn process_tasks(store: Store, mut queue: mpsc::Receiver<(Task, oneshot::Sender<Response<Full<Bytes>>>)>) {
     while let Some((task, tx)) = queue.blocking_recv() {
         let res = match task {
             Task::PrefixMatch(MatchPrefixRequest {
@@ -37,7 +40,7 @@ fn process_tasks(store: Store, mut queue: mpsc::Receiver<(Task, oneshot::Sender<
                 .header(hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,"DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range")
                 .header(hyper::header::ACCESS_CONTROL_EXPOSE_HEADERS,"Content-Length,Content-Range")
                 .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                .body(hyper::Body::from(res))
+                .body(res.into())
                 .unwrap()
         );
     }
@@ -399,10 +402,10 @@ enum Task {
 }
 
 async fn process_request(
-    req: Request<Body>,
+    req: Request<hyper::body::Incoming>,
     timestamps: TimeStamps,
-    tx: mpsc::Sender<(Task, oneshot::Sender<Response<Body>>)>,
-) -> Result<Response<Body>, Infallible> {
+    tx: mpsc::Sender<(Task, oneshot::Sender<Response<Full<Bytes>>>)>,
+) -> Result<Response<Full<Bytes>>, Infallible> {
     let match_options = MatchOptions {
         match_type: MatchType::LongestMatch,
         include_less_specifics: true,
@@ -581,7 +584,7 @@ async fn process_request(
     }
 }
 
-fn not_found(description: Option<String>) -> Result<Response<Body>, Infallible> {
+fn not_found(description: Option<String>) -> Result<Response<Full<Bytes>>, Infallible> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header(hyper::header::CONTENT_TYPE, "application/json")
@@ -595,14 +598,16 @@ fn not_found(description: Option<String>) -> Result<Response<Body>, Infallible> 
             "Content-Length,Content-Range",
         )
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-        .body(Body::from(format!(
-            "{{\"results\": null, \"error\": true, \"error_msg\": \"{}\"}}",
-            description.unwrap_or_else(|| "cannot parse query".to_string())
-        )))
+        .body(
+            format!(
+                "{{\"results\": null, \"error\": true, \"error_msg\": \"{}\"}}",
+                description.unwrap_or_else(|| "cannot parse query".to_string())
+            ).into()
+        )
         .unwrap())
 }
 
-fn internal_server_error() -> Response<Body> {
+fn internal_server_error() -> Response<Full<Bytes>> {
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
         .header(hyper::header::CONTENT_TYPE, "application/json")
@@ -616,11 +621,11 @@ fn internal_server_error() -> Response<Body> {
             "Content-Length,Content-Range",
         )
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-        .body(Body::empty())
+        .body("".into())
         .unwrap()
 }
 
-fn ok_cors_response(body: String) -> Response<Body> {
+fn ok_cors_response(body: String) -> Response<Full<Bytes>> {
     Response::builder()
         .status(StatusCode::OK)
         .header(hyper::header::CONTENT_TYPE, "application/json")
@@ -634,7 +639,7 @@ fn ok_cors_response(body: String) -> Response<Body> {
             "Content-Length,Content-Range",
         )
         .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-        .body(Body::from(body))
+        .body(body.into())
         .unwrap()
 }
 
@@ -696,22 +701,33 @@ async fn main() {
         process_tasks(store, rx);
     });
 
-    let make_svc = make_service_fn(|_conn| {
-        let tx = tx.clone();
-        async move {
-            // service_fn converts our function into a `Service`
-            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
-                let tx = tx.clone();
-                process_request(req, ts, tx)
-            }))
+    let listener = match TcpListener::bind(listen).await {
+        Ok(listener) => listener,
+        Err(err) => {
+            eprintln!("Failed to bind to {}: {}", listen, err);
+            process::exit(1);
         }
-    });
+    };
 
-    println!("bind server at {}...", listen);
-    let server = Server::bind(&listen).serve(make_svc);
-
-    // Run this server for... forever!
-    if let Err(e) = server.await {
-        eprintln!("server error: {}", e);
+    loop {
+        let stream = match listener.accept().await {
+            Ok((stream, _)) => stream,
+            Err(err) => {
+                eprintln!("Fatal: Failed to accept connection: {}", err);
+                process::exit(1);
+            }
+        };
+        let tx = tx.clone();
+        tokio::task::spawn(async move {
+            let _ = hyper_util::server::conn::auto::Builder::new(
+                TokioExecutor::new()
+            ).serve_connection(
+                TokioIo::new(stream),
+                hyper::service::service_fn(move |req| {
+                    let tx = tx.clone();
+                    process_request(req, ts, tx)
+                })
+            ).await;
+        });
     }
 }
