@@ -1,6 +1,6 @@
 use roto_api::{Addr, MatchOptions, MatchType, Prefix, Store, RecordSet};
 use rustyline::error::ReadlineError;
-use rustyline::Editor;
+use rustyline::{DefaultEditor, Editor};
 use std::str::FromStr;
 use std::{env, process};
 
@@ -48,7 +48,10 @@ fn main() {
         }
     }
 
-    let mut rl = Editor::<()>::new();
+    let Ok(mut rl) = DefaultEditor::new() else {
+        eprintln!("Cannot load rustyline editor");
+        process::exit(1);
+    };
     if rl.load_history("/tmp/rotonda-store-history.txt").is_err() {
         eprintln!("No previous history.");
     }
