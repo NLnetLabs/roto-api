@@ -1,6 +1,6 @@
 use roto_api::{Addr, MatchOptions, MatchType, Prefix, Store, RecordSet};
 use rustyline::error::ReadlineError;
-use rustyline::{DefaultEditor, Editor};
+use rustyline::DefaultEditor;
 use std::str::FromStr;
 use std::{env, process};
 
