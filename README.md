@@ -5,6 +5,10 @@ This is an HTTP/JSON API that gets data from BGP announcements (through the RIPE
 It can be queried on prefix and ASNs.
 
 Everything is hosted from RAM, so this should be ⚡fast.
+
+A hosted version of this API is available via [https://rest.bgp-api.net"].
+
+
 ## Resources
 
 | Name     | Type          |  Endpoint           |
