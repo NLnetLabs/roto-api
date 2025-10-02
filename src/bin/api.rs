@@ -98,6 +98,7 @@ pub fn match_prefix_output(store: &Store, prefix: Prefix, match_options: MatchOp
                 builder.member_str("type", &recs.match_type);
                 builder.member_raw("meta", "[]");
                 builder.member_raw("members", "[]");
+                builder.member_raw("relations", "[]");
             }
 
             // See whether the result_prefix has a DelExtRecord, if it does
