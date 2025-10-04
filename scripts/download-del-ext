@@ -3,7 +3,7 @@
 
 if [ "$1" != "--all" ] && [ "$1" != "afrinic" ] && [ "$1" != "apnic" ] && [ "$1" != "arin" ] && [ "$1" != "lacnic" ] && [ "$1" != "ripencc" ]; then
   echo "download delegated extended files from RIRs"
-  echo "usage: download-del-ext [afrinic|apinic|arin|lacnic|ripencc| --all]"
+  echo "usage: download-del-ext [afrinic|apnic|arin|lacnic|ripencc| --all]"
   exit 0
 fi
 
@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 cd ..
 
 if [ "$1" == "--all" ]; then
-    RIRS="afrnic apnic arin lacnic ripencc"
+    RIRS="afrinic apnic arin lacnic ripencc"
 else
     RIRS="$1"
 fi
