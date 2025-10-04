@@ -1,5 +1,8 @@
 #/bin/bash
 
+# Set the BIND Environment variable to override the default value
+APIBIND=${APIBIND:="10.133.129.4:8100"}
+
 if [ -f data/delegated_all.csv ];then
    echo "skipping downloading rir delegated (already there). use download-del-ext to update"
 else 
@@ -16,7 +19,7 @@ fi
 
 echo "starting roto-api-dev..."
 if [ -f target2/release/api ];then
-    target2/release/api 10.133.129.4:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+    target2/release/api $APIBIND ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
 else
-    cargo run --release --bin api -- 10.133.129.4:8100 ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
+    cargo run --release --bin api -- $APIBIND ./data/delegated_all.csv ./data/pfx_asn_dfz_v4.csv ./data/pfx_asn_dfz_v6.csv
 fi
