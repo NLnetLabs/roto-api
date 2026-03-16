@@ -625,6 +625,7 @@ impl Store {
             let record = record?;
 
             if record[0].starts_with('#')
+                || record.len() < 8
                 || &record[5] == "summary"
                 || &record[6] == "reserved"
                 || &record[6] == "available"
