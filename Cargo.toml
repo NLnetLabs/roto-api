@@ -14,10 +14,13 @@ version = "0.2.1"
 
 [dependencies]
 ansi_term = "^0.12"
+bytes = "1"
 chrono = "0.4.20"
-csv = "^1.3"
-hyper = {version = "^0.14", features = ["full"]}
-num = "^0.3"
+csv = "1.3"
+http-body-util = "0.1.2"
+hyper = {version = "1.3.1", features = ["server"]}
+hyper-util = { version = "0.1", features = [ "server-auto", "tokio" ] }
+num = "0.4"
 rotonda-store = "0.2.0"
-rustyline = "^8"
-tokio = {version = "^1", features = ["macros", "rt-multi-thread", "sync"]}
+rustyline = "17"
+tokio = {version = "^1", features = ["macros", "net", "rt-multi-thread", "sync"]}
