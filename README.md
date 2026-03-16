@@ -468,8 +468,8 @@ apt install build-essential
 
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-rustup toolchain install 1.51
-rustup default 1.51
+rustup toolchain install stable
+rustup default stable
 ```
 The download scripts depend on `ripgrep` to be available in the
 dir `/home/roto/.cargo/bin/`. Change the path to the `rg` (ripgrep)
