@@ -3,7 +3,7 @@
 
 if [ "$1" != "--all" ] && [ "$1" != "afrinic" ] && [ "$1" != "apnic" ] && [ "$1" != "arin" ] && [ "$1" != "lacnic" ] && [ "$1" != "ripencc" ]; then
   echo "download delegated extended files from RIRs"
-  echo "usage: download-del-ext [afrinic|apinic|arin|lacnic|ripencc| --all]"
+  echo "usage: download-del-ext [afrinic|apnic|arin|lacnic|ripencc| --all]"
   exit 0
 fi
 
@@ -11,17 +11,28 @@ fi
 cd "$(dirname "$0")"
 cd ..
 
-# Create the whole dir if it doesn't exist
-# Also move the exsiting files into downloads/_/old
-if [ -d downloads/del_ext/old ];then
-    mv -f downloads/del_ext/delegated-"$1"-extended-latest.txt downloads/del_ext/old/
+if [ "$1" == "--all" ]; then
+    RIRS="afrinic apnic arin lacnic ripencc"
 else
-   mkdir -p downloads/del_ext/old
+    RIRS="$1"
 fi
 
+# Create the downloads/del_ext dir if it doesn't exist
+if [ ! -d downloads/del_ext/old ]; then
+    mkdir -p downloads/del_ext/old
+fi
+
+# Create data if it doesn't exist
 if [ ! -d data ];then
   mkdir data
 fi
+
+# Move existing file(s) into old
+for f in $RIRS; do
+    if [ -e downloads/del_ext/delegated-"$f"-extended-latest.txt ]; then
+        mv -f downloads/del_ext/delegated-"$f"-extended-latest.txt downloads/del_ext/old/
+    fi
+done
 
 if [ "$1" = "afrinic" ] || [  "$1" = "--all" ]; then
   echo `date --iso-8601="seconds"` roto-api download delegated-afrinic-extended-latest

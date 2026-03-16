@@ -12,17 +12,28 @@ fi
 cd "$(dirname "$0")"
 cd ..
 
-# Create the whole dir if it doesn't exist
-# Also move the exsiting files into downloads/_/old
-if [ -d downloads/riswhois/old ]; then
-    mv -f downloads/riswhois/"$1" downloads/riswhois/old/
+if [ "$1" == "--all" ]; then
+    RISFILES="riswhois4 riswhois6"
 else
+    RISFILES="$1"
+fi
+
+# Create the downloads dir if it doesn't exist
+if [ ! -d downloads/riswhois/old ]; then
     mkdir -p downloads/riswhois/old
 fi
 
+# Create the data dir if it doesn't exist
 if [ ! -d data ]; then
    mkdir data
 fi
+
+# Move existing file(s) into old
+for f in $RISFILES; do
+    if [ -e downloads/riswhois/$f ]; then
+        mv -f downloads/riswhois/$f downloads/riswhois/old/
+    fi
+done
 
 if [ "$1" = "riswhois4" ] || [ "$1" = "--all" ]; then
     echo `date --iso-8601="seconds"` roto-api download riswhois ipv4
