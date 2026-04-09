@@ -37,7 +37,24 @@ async fn main() {
         let mut concatenated = String::new();
         for rir in ["afrinic", "apnic", "arin", "lacnic", "ripencc"] {
             let path = format!("downloads/del_ext/delegated-{}-extended-latest.txt", rir);
-            concatenated.push_str(&tokio::fs::read_to_string(path).await.unwrap_or_default());
+            let content = &tokio::fs::read_to_string(path).await.unwrap_or_default();
+            for line in content.lines() {
+                if  line.is_empty() || 
+                    line.starts_with("#") ||
+                    line.contains("summary") ||
+                    line.contains("reserved") ||
+                    line.contains("available")
+                {
+                    continue;
+                }
+                if line.split("|").count() < 7 {
+                    eprintln!("Files from {} are broken!", rir);
+                    let _ = tokio::fs::remove_file(format!("downloads/{}_h.txt", rir)).await;
+                    let _ = tokio::fs::remove_file(format!("downloads/del_ext/delegated-{}-extended-latest.txt", rir)).await;
+                    return;
+                }
+            }
+            concatenated.push_str(content);
         }
         if let Err(e) = tokio::fs::write("data/delegated_all.csv", concatenated).await {
             eprintln!("Could not write to delegated_all.csv: {}", e);
