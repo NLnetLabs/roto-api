@@ -67,7 +67,7 @@ async fn main() {
         let ssh = Command::new("ssh")
             .args([
                 &format!("roto@{}", roto_api_peer),
-                "\"systemctl --user restart roto-api\""
+                "systemctl --user restart roto-api"
             ]).output();
 
         fn print_output_or_error(output_or_error: Result<Output, io::Error>) {
