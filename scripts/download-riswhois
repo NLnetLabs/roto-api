@@ -3,7 +3,7 @@
 # only works on Linux
 
 if [ "$1" != "--all" ] && [ "$1" != "riswhois4" ] && [ "$1" != "riswhois6" ]; then
-  echo "download delegated extended files from RIRs"
+  echo "download riswhois files"
   echo "usage: download-riswhois [riswhois4|riswhois6| --all]"
   exit 0
 fi

@@ -39,17 +39,8 @@ for riswhois in \
 	            echo `date --iso-8601="seconds"` roto-api riswhois restarting local roto-api.
 		    XDG_RUNTIME_DIR="/run/user/1000" \
                     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus" \
-		    systemctl --user restart roto-api
+		    systemctl restart roto-api
 	       fi
             fi
 	fi
 done
-
-if [ "$changed" = true ] || [ "$arg" = "--force-sync" ]; then
-    echo `date --iso-8601="seconds"` roto-api riswhois syncing with peer.
-    rsync -Cavz --delete data/ "$ROTO_API_PEER":/home/roto/ris_alloc_api/data/
-    echo `date --iso-8601="seconds"` roto-api riswhois restarting peer.
-    ssh roto@"$ROTO_API_PEER" "systemctl --user restart roto-api"
-else
-    echo `date --iso-8601="seconds"` roto-api riswhois nothing changed, skipping syncing with peer
-fi
