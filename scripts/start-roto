@@ -9,7 +9,7 @@ fi
 
 if [ ! -f data/pfx_asn_dfz_v4.csv ];then
     echo "downloading riswhois files..."
-    ./scripts/download-riswhois
+    ./scripts/download-riswhois --all
 else
   echo "skipping downloading riswhois (already there). use download-riswhois to update"
 fi
