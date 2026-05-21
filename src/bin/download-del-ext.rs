@@ -4,10 +4,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::main]
 async fn main() {
-    let Ok(roto_api_peer) = std::env::var("ROTO_API_PEER") else {
-        eprintln!("ROTO_API_PEER not set!");
-        return;
-    };
+    // let Ok(roto_api_peer) = std::env::var("ROTO_API_PEER") else {
+    //     eprintln!("ROTO_API_PEER not set!");
+    //     return;
+    // };
 
     let afrinic = download("afrinic", "https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest");
     let apnic = download("apnic", "https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest");
@@ -74,18 +74,18 @@ async fn main() {
             .env("XDG_RUNTIME_DIR", "/run/user/1000")
             .env("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
             .output();
-        let rsync = Command::new("rsync")
-            .args([
-                "-Cavz", 
-                "--delete", 
-                "data/", 
-                &format!("{}:/home/roto/ris_alloc_api/data/", roto_api_peer)
-            ]).output();
-        let ssh = Command::new("ssh")
-            .args([
-                &format!("roto@{}", roto_api_peer),
-                "systemctl --user restart roto-api"
-            ]).output();
+        // let rsync = Command::new("rsync")
+        //     .args([
+        //         "-Cavz", 
+        //         "--delete", 
+        //         "data/", 
+        //         &format!("{}:/home/roto/ris_alloc_api/data/", roto_api_peer)
+        //     ]).output();
+        // let ssh = Command::new("ssh")
+        //     .args([
+        //         &format!("roto@{}", roto_api_peer),
+        //         "systemctl --user restart roto-api"
+        //     ]).output();
 
         fn print_output_or_error(output_or_error: Result<Output, io::Error>) {
             match output_or_error {
@@ -98,10 +98,10 @@ async fn main() {
         }
         println!("Restarting roto");
         print_output_or_error(restart_roto);
-        println!("rsync");
-        print_output_or_error(rsync);
-        println!("ssh");
-        print_output_or_error(ssh);
+        // println!("rsync");
+        // print_output_or_error(rsync);
+        // println!("ssh");
+        // print_output_or_error(ssh);
     } else {
         println!("No data was updated");
     }  
