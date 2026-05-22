@@ -32,7 +32,7 @@ for riswhois in \
 	            echo `date --iso-8601="seconds"` roto-api riswhois restarting local roto-api.
 		    XDG_RUNTIME_DIR="/run/user/1000" \
                     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus" \
-		    systemctl restart roto-api
+		    systemctl --user restart roto-api
 	       fi
             fi
 	fi
