@@ -5,14 +5,7 @@ arg="$1"
 if [ "$arg" != "" ] && [ "$arg" != "--dry-run" ] && [ "$arg" != "--force-sync" ]; then
   echo "download delegated extended files from RIRs"
   echo "usage: update-status-riswhois [--dry-run|--force-sync]"
-  echo
-  echo "set envvar ROTO_API_PEER to sync to peer"
   exit 0
-fi
-
-if [ "$ROTO_API_PEER" = "" ] && [ "$arg" != "--dry-run" ]; then
-  echo `date --iso-8601="seconds"` roto-api Error: Set envvar ROTO_API_PEER to sync to peer
-  exit 1
 fi
 
 # move to the dir of the repo this script is in
