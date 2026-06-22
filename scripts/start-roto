@@ -4,7 +4,7 @@ if [ -f data/delegated_all.csv ];then
    echo "skipping downloading rir delegated (already there). use download-del-ext to update"
 else 
    echo "downloading rir delegated extended files..."
-   ./scripts/download-del-ext
+   cargo run --release --bin download-del-ext
 fi
 
 if [ ! -f data/pfx_asn_dfz_v4.csv ];then
