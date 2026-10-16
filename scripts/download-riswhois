@@ -43,5 +43,5 @@ for af in 4 6
 do
   echo -e "ipv$af,\c" >> data/riswhois.timestamps.json
   echo -e "`stat -c %Y downloads/riswhois/riswhois"$af"`,\c" >> data/riswhois.timestamps.json
-  echo -e "\"`cat downloads/riswhois"$af"_h.txt | /home/roto/.cargo/bin/rg -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/riswhois.timestamps.json
+  echo -e "\"`cat downloads/riswhois"$af"_h.txt | /home/roto/.cargo/bin/rg -i -e '^Last-Modified: ([\w,0-9 :]+)' --only-matching --replace '$1'`\"" >> data/riswhois.timestamps.json
 done
